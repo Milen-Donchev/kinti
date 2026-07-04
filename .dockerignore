@@ -1,0 +1,17 @@
+.git
+.gitignore
+
+node_modules
+apps/*/node_modules
+
+dist
+apps/*/dist
+apps/api/generated
+
+.env
+.env.*
+.temp.env
+
+.DS_Store
+coverage
+*.log
