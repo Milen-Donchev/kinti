@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kinti-ingress
+  namespace: kinti-test
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: kinti.local
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kinti-api
+                port:
+                  number: 3000
+          - path: /(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kinti-web
+                port:
+                  number: 80

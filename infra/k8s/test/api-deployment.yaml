@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kinti-api
+  namespace: kinti-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kinti-api
+  template:
+    metadata:
+      labels:
+        app: kinti-api
+    spec:
+      containers:
+        - name: api
+          image: kinti-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: kinti-api-config
+            - secretRef:
+                name: kinti-api-secret
+          readinessProbe:
+            httpGet:
+              path: /health/db
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

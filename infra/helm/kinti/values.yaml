@@ -1,0 +1,63 @@
+api:
+  name: kinti-api
+  replicaCount: 1
+  image:
+    repository: kinti-api
+    tag: local
+    pullPolicy: IfNotPresent
+  service:
+    port: 3000
+  config:
+    NODE_ENV: production
+    PORT: "3000"
+  secrets:
+    DATABASE_URL: ""
+    DIRECT_URL: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  probes:
+    readiness:
+      path: /health/db
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    liveness:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 20
+
+web:
+  name: kinti-web
+  replicaCount: 1
+  image:
+    repository: kinti-web
+    tag: local
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  probes:
+    readiness:
+      path: /
+      initialDelaySeconds: 3
+      periodSeconds: 10
+    liveness:
+      path: /
+      initialDelaySeconds: 10
+      periodSeconds: 20
+
+ingress:
+  name: kinti-ingress
+  enabled: true
+  className: nginx
+  host: kinti.local

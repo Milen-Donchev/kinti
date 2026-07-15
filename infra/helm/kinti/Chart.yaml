@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kinti
+description: Kinti monthly expense management application
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+icon: "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIyLTA2L3JtNTM1YmF0Y2gyLW1vbmV5MS0wNy5wbmc.png"

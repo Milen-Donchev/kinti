@@ -6,3 +6,7 @@ build
 .env.*.local
 .DS_Store
 .temp.env
+
+/infra/k8s/**/api-secret.yaml
+/infra/k8s/**/web-secret.yaml
+infra/helm/kinti/values.*.secret.yaml

@@ -1,0 +1,16 @@
+api:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/milen-donchev/kinti-api
+    tag: latest
+    pullPolicy: IfNotPresent
+
+web:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/milen-donchev/kinti-web
+    tag: latest
+    pullPolicy: IfNotPresent
+
+ingress:
+  host: kinti.example.com
