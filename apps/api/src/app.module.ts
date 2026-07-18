@@ -6,6 +6,7 @@ import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { ExpensePaymentsModule } from './expense-payments/expense-payments.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ExpensePaymentsModule } from './expense-payments/expense-payments.modul
     AuthModule,
     ExpensesModule,
     ExpensePaymentsModule,
+    DashboardModule,
   ],
   controllers: [],
   providers: [],
