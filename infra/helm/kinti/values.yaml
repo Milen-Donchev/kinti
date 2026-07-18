@@ -61,3 +61,5 @@ ingress:
   enabled: true
   className: nginx
   host: kinti.local
+
+imagePullSecrets: []

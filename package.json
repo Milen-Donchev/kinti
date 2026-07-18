@@ -1,10 +1,6 @@
 {
   "name": "kinti",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev:web": "bun --cwd apps/web dev",
     "dev:api": "bun --cwd apps/api start:dev",
@@ -12,5 +8,9 @@
     "build:api": "bun --cwd apps/api build",
     "lint:web": "bun --cwd apps/web lint",
     "lint:api": "bun --cwd apps/api lint"
-  }
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }

@@ -13,4 +13,8 @@ web:
     pullPolicy: IfNotPresent
 
 ingress:
-  host: kinti.example.com
+  className: traefik
+  host: 46.101.230.169.sslip.io
+
+imagePullSecrets:
+  - name: ghcr-pull-secret

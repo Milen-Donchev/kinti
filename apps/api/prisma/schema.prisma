@@ -13,5 +13,107 @@ datasource db {
 
 model HealthCheck {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+}
+
+model Profile {
+  id String @id @db.Uuid
+
+  email       String?
+  displayName String? @map("display_name")
+  avatarUrl   String? @map("avatar_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  expenses Expense[]
+  payments ExpensePayment[]
+  settings UserSettings?
+
+  @@map("profiles")
+}
+
+model Expense {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String        @map("user_id") @db.Uuid
+  name          String
+  defaultAmount Decimal       @map("default_amount") @db.Decimal(10, 2)
+  billingPeriod BillingPeriod @map("billing_period")
+  importance    Importance
+  type          ExpenseType
+  icon          String
+  description   String?
+  isActive      Boolean       @default(true) @map("is_active")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  user     Profile          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments ExpensePayment[]
+
+  @@index([userId])
+  @@map("expenses")
+}
+
+model ExpensePayment {
+  id             String   @id @default(uuid()) @db.Uuid
+  expenseId      String   @map("expense_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  periodMonth    Int      @map("period_month")
+  periodYear     Int      @map("period_year")
+  paidAt         DateTime @default(now()) @map("paid_at")
+  amountSnapshot Decimal  @map("amount_snapshot") @db.Decimal(10, 2)
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, periodMonth, periodYear])
+  @@index([userId, periodYear, periodMonth])
+  @@map("expense_payments")
+}
+
+model UserSettings {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  theme     Theme    @default(system)
+  language  Language @default(bg)
+  currency  Currency @default(eur)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+enum BillingPeriod {
+  monthly
+  yearly
+}
+
+enum Importance {
+  essential
+  useful
+  cancelSoon @map("cancel_soon")
+}
+
+enum ExpenseType {
+  subscription
+  utility
+}
+
+enum Theme {
+  light
+  dark
+  system
+}
+
+enum Language {
+  bg
+  en
+}
+
+enum Currency {
+  eur
+  usd
+  gbp
 }
