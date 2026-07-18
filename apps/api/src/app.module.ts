@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { ExpensePaymentsModule } from './expense-payments/expense-payments.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { UserSettingsModule } from './user-settings/user-settings.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     ExpensesModule,
     ExpensePaymentsModule,
     DashboardModule,
+    UserSettingsModule,
   ],
   controllers: [],
   providers: [],
