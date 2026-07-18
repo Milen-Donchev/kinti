@@ -4,6 +4,10 @@ api:
     repository: ghcr.io/milen-donchev/kinti-api
     tag: latest
     pullPolicy: IfNotPresent
+  config:
+    NODE_ENV: production
+    SUPABASE_URL: https://yzomlqhrnxsnwcviuufc.supabase.co
+    SUPABASE_JWT_ISSUER: https://yzomlqhrnxsnwcviuufc.supabase.co/auth/v1
 
 web:
   replicaCount: 2

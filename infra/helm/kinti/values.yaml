@@ -8,8 +8,10 @@ api:
   service:
     port: 3000
   config:
-    NODE_ENV: production
+    NODE_ENV: development
     PORT: "3000"
+    SUPABASE_URL: ""
+    SUPABASE_JWT_ISSUER: ""
   secrets:
     DATABASE_URL: ""
     DIRECT_URL: ""
