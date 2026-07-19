@@ -6,8 +6,8 @@ api:
     pullPolicy: IfNotPresent
   config:
     NODE_ENV: production
-    SUPABASE_URL: https://yzomlqhrnxsnwcviuufc.supabase.co
-    SUPABASE_JWT_ISSUER: https://yzomlqhrnxsnwcviuufc.supabase.co/auth/v1
+    SUPABASE_URL: https://auzgqefookfzxmbejpjx.supabase.co
+    SUPABASE_JWT_ISSUER: https://auzgqefookfzxmbejpjx.supabase.co/auth/v1
 
 web:
   replicaCount: 2
