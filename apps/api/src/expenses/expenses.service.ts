@@ -1,8 +1,28 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+
+function parseDateOnly(date: string) {
+  const [year, month, day] = date.split('-').map(Number);
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    Number.isNaN(parsedDate.getTime()) ||
+    parsedDate.getUTCFullYear() !== year ||
+    parsedDate.getUTCMonth() !== month - 1 ||
+    parsedDate.getUTCDate() !== day
+  ) {
+    throw new BadRequestException('dueDate must be a valid calendar date');
+  }
+
+  return parsedDate;
+}
 
 @Injectable()
 export class ExpensesService {
@@ -22,6 +42,7 @@ export class ExpensesService {
         name: reqBody.name,
         defaultAmount: reqBody.defaultAmount,
         billingPeriod: reqBody.billingPeriod,
+        dueDate: parseDateOnly(reqBody.dueDate),
         importance: reqBody.importance,
         type: reqBody.type,
         icon: reqBody.icon,
@@ -53,6 +74,7 @@ export class ExpensesService {
         name: reqBody.name,
         defaultAmount: reqBody.defaultAmount,
         billingPeriod: reqBody.billingPeriod,
+        dueDate: reqBody.dueDate ? parseDateOnly(reqBody.dueDate) : undefined,
         importance: reqBody.importance,
         type: reqBody.type,
         icon: reqBody.icon,

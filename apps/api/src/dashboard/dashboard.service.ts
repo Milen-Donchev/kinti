@@ -25,11 +25,38 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getMonthlySummary(userId: string, query: DashboardPeriodQueryDto) {
+    const periodStart = new Date(
+      Date.UTC(query.periodYear, query.periodMonth - 1, 1),
+    );
+    const periodEnd = new Date(
+      Date.UTC(query.periodYear, query.periodMonth, 0),
+    );
+
     const expenses = await this.prisma.expense.findMany({
       where: {
         userId,
         isActive: true,
-        billingPeriod: BillingPeriod.monthly,
+        OR: [
+          {
+            billingPeriod: BillingPeriod.monthly,
+            dueDate: {
+              lte: periodEnd,
+            },
+          },
+          {
+            billingPeriod: BillingPeriod.yearly,
+            dueDate: {
+              lte: periodEnd,
+            },
+          },
+          {
+            billingPeriod: BillingPeriod.oneTime,
+            dueDate: {
+              gte: periodStart,
+              lte: periodEnd,
+            },
+          },
+        ],
       },
       include: {
         payments: {
@@ -44,6 +71,14 @@ export class DashboardService {
       },
     });
 
+    const applicableExpenses = expenses.filter((expense) => {
+      if (expense.billingPeriod !== BillingPeriod.yearly) {
+        return true;
+      }
+
+      return expense.dueDate.getUTCMonth() + 1 === query.periodMonth;
+    });
+
     const paidExpenses: PaidExpenseSummaryItem[] = [];
     const unpaidExpenses: UnpaidExpenseSummaryItem[] = [];
 
@@ -51,7 +86,7 @@ export class DashboardService {
     let paidTotal = new Prisma.Decimal(0);
     let remainingTotal = new Prisma.Decimal(0);
 
-    for (const expense of expenses) {
+    for (const expense of applicableExpenses) {
       plannedTotal = plannedTotal.plus(expense.defaultAmount);
 
       const payment = expense.payments[0];
@@ -88,7 +123,7 @@ export class DashboardService {
         projected: projectedTotal.toString(),
       },
       counts: {
-        total: expenses.length,
+        total: applicableExpenses.length,
         paid: paidExpenses.length,
         unpaid: unpaidExpenses.length,
       },

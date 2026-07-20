@@ -11,6 +11,7 @@ import {
 import { BillingPeriod, ExpenseType, Importance } from '@prisma/client';
 
 const DEFAULT_AMOUNT_REGEX = /^\d{1,8}(\.\d{1,2})?$/;
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateExpenseDto {
   @IsString()
@@ -34,6 +35,13 @@ export class CreateExpenseDto {
   @IsNotEmpty()
   @IsEnum(BillingPeriod)
   billingPeriod: BillingPeriod;
+
+  @IsString()
+  @IsNotEmpty()
+  @Matches(DATE_ONLY_REGEX, {
+    message: 'dueDate must be a valid date in YYYY-MM-DD format',
+  })
+  dueDate: string;
 
   @IsNotEmpty()
   @IsEnum(Importance)

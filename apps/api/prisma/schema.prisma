@@ -39,6 +39,7 @@ model Expense {
   name          String
   defaultAmount Decimal       @map("default_amount") @db.Decimal(10, 2)
   billingPeriod BillingPeriod @map("billing_period")
+  dueDate       DateTime      @map("due_date") @db.Date
   importance    Importance
   type          ExpenseType
   icon          String
@@ -88,6 +89,7 @@ model UserSettings {
 enum BillingPeriod {
   monthly
   yearly
+  oneTime @map("one_time")
 }
 
 enum Importance {
@@ -110,6 +112,7 @@ enum Theme {
 enum Language {
   bg
   en
+  es
 }
 
 enum Currency {
