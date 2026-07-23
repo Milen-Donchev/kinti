@@ -41,6 +41,11 @@ web:
     pullPolicy: IfNotPresent
   service:
     port: 80
+  config:
+    VITE_API_URL: ""
+    VITE_SUPABASE_URL: ""
+  secrets:
+    VITE_SUPABASE_ANON_KEY: ""
   resources:
     requests:
       cpu: 50m

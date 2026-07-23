@@ -23,6 +23,11 @@ spec:
           imagePullPolicy: {{ .Values.web.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.web.service.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.web.name }}-config
+            - secretRef:
+                name: {{ .Values.web.name }}-secret
           readinessProbe:
             httpGet:
               path: {{ .Values.web.probes.readiness.path }}

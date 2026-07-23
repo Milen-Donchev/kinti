@@ -18,7 +18,10 @@ RUN bun --cwd apps/web build
 FROM nginx:1.27-alpine AS runtime
 
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/web/docker-entrypoint.d/40-generate-runtime-config.sh /docker-entrypoint.d/40-generate-runtime-config.sh
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+
+RUN chmod +x /docker-entrypoint.d/40-generate-runtime-config.sh
 
 EXPOSE 80
 
