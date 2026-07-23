@@ -1,11 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ChartNoAxesCombined, KeyRound, Loader2, Mail, Sparkles, WalletCards } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import {
+  ChartNoAxesCombined,
+  KeyRound,
+  Loader2,
+  Mail,
+  Monitor,
+  Moon,
+  Settings2,
+  Sparkles,
+  Sun,
+} from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useLocation } from 'react-router-dom'
 import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
+import { BrandLogo } from '@/components/brand/brand-logo'
 import {
   Card,
   CardContent,
@@ -15,8 +26,17 @@ import {
 } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { useAppearance } from '@/app/appearance-context'
 import { useAuth } from '@/features/auth/auth-context'
+import { languages, type Language } from '@/i18n/dictionaries'
 import { useI18n } from '@/i18n/i18n-context'
+import { themes } from '@/lib/appearance'
+import { cn } from '@/lib/cn'
 import { getMissingEnvKeys } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
 import lightHeroImage from '@/assets/calm-finance-hero.jpg'
@@ -33,10 +53,23 @@ type AuthFormValues = z.infer<ReturnType<typeof createAuthSchema>>
 
 type AuthMode = 'sign-in' | 'sign-up'
 
+const languageFlags: Record<Language, string> = {
+  bg: '🇧🇬',
+  en: '🇬🇧',
+  es: '🇪🇸',
+}
+
+const themeIcons = {
+  light: Sun,
+  dark: Moon,
+  system: Monitor,
+}
+
 export function AuthPage() {
   const location = useLocation()
   const { session, isLoading } = useAuth()
-  const { t } = useI18n()
+  const { language, setLanguage, t } = useI18n()
+  const { appearance, setTheme } = useAppearance()
   const [mode, setMode] = useState<AuthMode>('sign-in')
   const [formError, setFormError] = useState<string | null>(null)
   const [formNotice, setFormNotice] = useState<string | null>(null)
@@ -104,16 +137,18 @@ export function AuthPage() {
       <section className="relative flex min-h-[640px] overflow-hidden border-b-2 border-[rgb(var(--border))] bg-gradient-to-br from-cyan-100 via-white to-amber-100 px-6 py-8 sm:px-10 lg:min-h-screen lg:border-b-0 lg:border-r-2 lg:px-12 dark:border-cyan-300/20 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgb(255_212_90/0.42),transparent_24rem),radial-gradient(circle_at_78%_18%,rgb(53_185_255/0.3),transparent_24rem)] dark:bg-[radial-gradient(circle_at_24%_18%,rgb(53_185_255/0.24),transparent_24rem),radial-gradient(circle_at_78%_16%,rgb(183_125_255/0.22),transparent_24rem)]" />
         <div className="relative z-10 flex w-full flex-col gap-8">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#29c776] text-white shadow-[0_4px_0_#16a063]">
-              <WalletCards size={21} />
-            </div>
-            <div>
-              <p className="font-semibold">{t('common.appName')}</p>
-              <p className="text-xs text-[rgb(var(--muted-foreground))]">
-                {t('common.tagline')}
-              </p>
-            </div>
+          <div className="flex items-start justify-between gap-4">
+            <BrandLogo
+              wordmark={t('common.appName')}
+              tagline={t('common.tagline')}
+            />
+
+            <AuthPreferencesPopover
+              language={language}
+              theme={appearance.theme}
+              onLanguageChange={setLanguage}
+              onThemeChange={setTheme}
+            />
           </div>
 
           <div className="grid flex-1 items-center gap-8 py-6 xl:grid-cols-[0.88fr_1.12fr]">
@@ -273,7 +308,7 @@ export function AuthPage() {
             <p className="mt-5 text-center text-sm text-[rgb(var(--muted-foreground))]">
               {mode === 'sign-in' ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
               <button
-                className="font-medium text-[rgb(var(--accent))] hover:underline"
+                className="cursor-pointer font-medium text-[rgb(var(--accent))] hover:underline"
                 type="button"
                 onClick={() =>
                   setMode((current) =>
@@ -290,5 +325,110 @@ export function AuthPage() {
         </Card>
       </section>
     </main>
+  )
+}
+
+function AuthPreferencesPopover({
+  language,
+  theme,
+  onLanguageChange,
+  onThemeChange,
+}: {
+  language: Language
+  theme: (typeof themes)[number]
+  onLanguageChange: (language: Language) => void
+  onThemeChange: (theme: (typeof themes)[number]) => void
+}) {
+  const { t } = useI18n()
+  const ThemeIcon = themeIcons[theme]
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          className="h-10 shrink-0 rounded-2xl bg-white/82 px-3 shadow-[0_4px_0_rgb(var(--border))] backdrop-blur dark:bg-slate-950/60"
+          type="button"
+          variant="secondary"
+          aria-label={t('auth.preferences')}
+        >
+          <span className="text-base leading-none">{languageFlags[language]}</span>
+          <ThemeIcon size={15} />
+          <Settings2 size={15} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 p-3">
+        <div className="grid gap-4">
+          <AuthSegmentedControl
+            label={t('settings.languageTitle')}
+            options={languages.map((languageOption) => ({
+              value: languageOption,
+              label: languageFlags[languageOption],
+              title: t(`settings.language.${languageOption}`),
+            }))}
+            value={language}
+            onChange={onLanguageChange}
+          />
+          <AuthSegmentedControl
+            label={t('settings.themeTitle')}
+            options={themes.map((themeOption) => {
+              const Icon = themeIcons[themeOption]
+
+              return {
+                value: themeOption,
+                label: <Icon size={15} />,
+                title: t(`settings.theme.${themeOption}`),
+              }
+            })}
+            value={theme}
+            onChange={onThemeChange}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function AuthSegmentedControl<TValue extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string
+  options: Array<{
+    value: TValue
+    label: ReactNode
+    title: string
+  }>
+  value: TValue
+  onChange: (value: TValue) => void
+}) {
+  return (
+    <div className="grid gap-2">
+      <p className="px-1 text-xs font-extrabold uppercase text-[rgb(var(--muted-foreground))]">
+        {label}
+      </p>
+      <div
+        className="flex items-center gap-1 rounded-2xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface-subtle))] p-1"
+        aria-label={label}
+      >
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            title={option.title}
+            aria-label={option.title}
+            className={cn(
+              'grid h-9 flex-1 cursor-pointer place-items-center rounded-xl px-2 text-sm font-extrabold text-[rgb(var(--muted-foreground))] transition-colors hover:bg-[rgb(var(--surface))] hover:text-[rgb(var(--foreground))]',
+              value === option.value &&
+                'bg-[#29c776] text-white shadow-[0_3px_0_#16a063]',
+            )}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }

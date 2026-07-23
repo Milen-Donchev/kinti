@@ -1,4 +1,4 @@
-Kinti is a monthly expense management web application.
+Levko is a monthly expense management web application.
 
 Stack:
 - React + Vite
@@ -9,3 +9,6 @@ Stack:
 - Kubernetes
 - Helm
 - Argo CD
+
+Docs:
+- [Deployment flow](docs/deployment.md)

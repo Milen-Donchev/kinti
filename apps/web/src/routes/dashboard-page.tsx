@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowDownRight,
   ArrowUpRight,
-  CalendarDays,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -24,6 +23,7 @@ import type { Currency, DashboardSummary, Expense } from '@/lib/types'
 import { getIconTone, visualTones } from '@/lib/visuals'
 import lightJumbotronImage from '@/assets/calm-finance-hero.jpg'
 import darkJumbotronImage from '@/assets/tokyo-finance-jumbotron.jpg'
+import dashboardMascotImage from '@/assets/mascots/levko-dashboard-mascot.png'
 
 function getCurrentPeriod() {
   const now = new Date()
@@ -69,6 +69,23 @@ function formatMoney(value: string, language: string, currency: Currency) {
   }).format(Number(value))
 }
 
+function getMonthlyProgress(summary: DashboardSummary | undefined) {
+  if (!summary) {
+    return 0
+  }
+
+  const planned = Number(summary.totals.planned)
+  const paid = Number(summary.totals.paid)
+
+  if (!Number.isFinite(planned) || planned <= 0) {
+    return summary.counts.total > 0
+      ? (summary.counts.paid / summary.counts.total) * 100
+      : 0
+  }
+
+  return Math.min((paid / planned) * 100, 100)
+}
+
 export function DashboardPage() {
   const { language, t } = useI18n()
   const { appearance } = useAppearance()
@@ -89,6 +106,7 @@ export function DashboardPage() {
   })
 
   const summary = summaryQuery.data
+  const monthlyProgress = getMonthlyProgress(summary)
   const undoPaymentMutation = useMutation({
     mutationFn: (expenseId: string) =>
       apiRequest(
@@ -110,7 +128,7 @@ export function DashboardPage() {
   })
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <section className="relative overflow-hidden rounded-3xl border-2 border-[#b8d5ee] bg-white shadow-[0_8px_0_#b8d5ee] dark:border-[#3f5180] dark:bg-slate-950 dark:shadow-[0_8px_0_#27375f]">
         <img
           className="absolute inset-0 h-full w-full object-cover dark:hidden"
@@ -125,9 +143,48 @@ export function DashboardPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-white/98 via-white/82 to-white/10 dark:from-slate-950/94 dark:via-slate-950/70 dark:to-slate-950/18" />
         <div className="absolute inset-0 bg-gradient-to-t from-white/72 via-transparent to-transparent dark:from-slate-950/82" />
 
-        <div className="relative grid min-h-[360px] gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,0.92fr)_340px] lg:items-end">
+        <div className="relative grid min-h-[320px] gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,0.92fr)_360px] lg:items-end">
           <div className="self-center">
-            <div className="mb-5 flex flex-wrap items-center gap-3">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-xl border-2 border-[#29c776] bg-[#ddfbea] px-3 py-2 text-sm font-extrabold text-[#16a063] shadow-[0_4px_0_#29c776] dark:bg-[#153a2b] dark:text-[#36d887]">
+              <Sparkles size={16} />
+              {t('auth.badge')}
+            </div>
+            <h1 className="max-w-xl text-3xl font-extrabold tracking-normal text-slate-950 dark:text-white sm:text-4xl">
+              {t('dashboard.title')}
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-700 dark:text-slate-200 sm:text-base">
+              {t('dashboard.description')}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <span className="rounded-xl border-2 border-[#b8d5ee] bg-white px-3 py-2 text-sm font-extrabold text-slate-900 shadow-[0_4px_0_#b8d5ee] dark:border-white/20 dark:bg-white/12 dark:text-white dark:shadow-none">
+                {t('dashboard.hero.total', { count: summary?.counts.total ?? 0 })}
+              </span>
+              <span className="rounded-xl border-2 border-[#29c776] bg-[#ddfbea] px-3 py-2 text-sm font-extrabold text-[#16a063] shadow-[0_4px_0_#29c776] dark:bg-emerald-400/18 dark:text-emerald-100 dark:shadow-none">
+                {t('dashboard.hero.paid', { count: summary?.counts.paid ?? 0 })}
+              </span>
+              <span className="rounded-xl border-2 border-[#ff6b7a] bg-[#ffe4e8] px-3 py-2 text-sm font-extrabold text-[#d64b58] shadow-[0_4px_0_#ff6b7a] dark:bg-pink-400/18 dark:text-pink-100 dark:shadow-none">
+                {t('dashboard.hero.open', { count: summary?.counts.unpaid ?? 0 })}
+              </span>
+            </div>
+          </div>
+
+          <div className="relative grid gap-3 self-stretch pt-28 sm:pt-32 lg:self-end lg:pt-0">
+            <img
+              className="pointer-events-none absolute -left-2 top-5 z-10 h-40 w-auto drop-shadow-[0_12px_0_rgba(11,37,69,0.18)] sm:top-3 sm:h-48 lg:-left-24 lg:-top-8 lg:h-[300px]"
+              src={dashboardMascotImage}
+              alt=""
+            />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {!isCurrentPeriod ? (
+                <Button
+                  className="h-10 bg-white/90 px-4 text-xs backdrop-blur dark:bg-slate-950/75"
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setPeriod(currentPeriod)}
+                >
+                  {t('dashboard.currentMonth')}
+                </Button>
+              ) : null}
               <div className="flex items-center gap-2 rounded-2xl border-2 border-[#35b9ff] bg-white/90 p-1.5 shadow-[0_4px_0_#35b9ff] backdrop-blur dark:border-cyan-300/35 dark:bg-slate-950/75 dark:shadow-[0_4px_0_#164e75]">
                 <Button
                   className="h-9 w-9 rounded-xl px-0 shadow-[0_3px_0_rgb(var(--border))]"
@@ -140,8 +197,7 @@ export function DashboardPage() {
                 >
                   <ChevronLeft size={16} />
                 </Button>
-                <span className="inline-flex min-w-[156px] items-center justify-center gap-2 px-2 text-sm font-extrabold text-slate-950 dark:text-white">
-                  <CalendarDays size={15} />
+                <span className="inline-flex min-w-[156px] items-center justify-center px-2 text-sm font-extrabold text-slate-950 dark:text-white">
                   {formatPeriodLabel(period, language)}
                 </span>
                 <Button
@@ -156,70 +212,61 @@ export function DashboardPage() {
                   <ChevronRight size={16} />
                 </Button>
               </div>
-              {!isCurrentPeriod ? (
-                <Button
-                  className="h-10 px-4 text-xs"
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setPeriod(currentPeriod)}
-                >
-                  {t('dashboard.currentMonth')}
-                </Button>
-              ) : null}
             </div>
-            <h1 className="max-w-xl text-4xl font-extrabold tracking-normal text-slate-950 dark:text-white sm:text-5xl">
-              {t('dashboard.title')}
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-700 dark:text-slate-200 sm:text-base">
-              {t('dashboard.description')}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <span className="rounded-xl border-2 border-[#b8d5ee] bg-white px-3 py-2 text-sm font-extrabold text-slate-900 shadow-[0_4px_0_#b8d5ee] dark:border-white/20 dark:bg-white/12 dark:text-white dark:shadow-none">
-                {t('dashboard.hero.total', { count: summary?.counts.total ?? 0 })}
-              </span>
-              <span className="rounded-xl border-2 border-[#29c776] bg-[#ddfbea] px-3 py-2 text-sm font-extrabold text-[#16a063] shadow-[0_4px_0_#29c776] dark:bg-emerald-400/18 dark:text-emerald-100 dark:shadow-none">
-                {t('dashboard.hero.paid', { count: summary?.counts.paid ?? 0 })}
-              </span>
-              <span className="rounded-xl border-2 border-[#ff6b7a] bg-[#ffe4e8] px-3 py-2 text-sm font-extrabold text-[#d64b58] shadow-[0_4px_0_#ff6b7a] dark:bg-pink-400/18 dark:text-pink-100 dark:shadow-none">
-                {t('dashboard.hero.open', { count: summary?.counts.unpaid ?? 0 })}
-              </span>
-            </div>
-          </div>
 
-          <div className="grid gap-3 rounded-2xl border-2 border-[#35b9ff] bg-white/86 p-4 text-slate-950 shadow-[0_7px_0_#35b9ff] backdrop-blur-md dark:border-cyan-300/35 dark:bg-slate-950/72 dark:text-white dark:shadow-[0_7px_0_#164e75]">
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#ffd45a] text-slate-950 shadow-[0_4px_0_#d39d24]">
-                <Sparkles size={18} />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-slate-950 dark:text-white">
-                  {summary
-                    ? formatMoney(
-                        summary.totals.projected,
-                        language,
-                        appearance.currency,
-                      )
-                    : '...'}
+            <div className="relative overflow-hidden rounded-2xl border-2 border-[#35b9ff] bg-white/88 p-4 text-slate-950 shadow-[0_7px_0_#35b9ff] backdrop-blur-md dark:border-cyan-300/35 dark:bg-slate-950/78 dark:text-white dark:shadow-[0_7px_0_#164e75] lg:pl-16">
+              <div className="relative max-w-[240px]">
+                <p className="text-xs font-extrabold uppercase text-[#1688c7] dark:text-cyan-200">
+                  {t('dashboard.progressTitle')}
                 </p>
-                <p className="text-xs text-slate-600 dark:text-cyan-100">
-                  {t('dashboard.metric.plannedDescription')}
+                <p className="mt-2 text-3xl font-extrabold text-slate-950 dark:text-white">
+                  {Math.round(monthlyProgress)}%
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-cyan-100">
+                  {t('dashboard.progressDescription', {
+                    paid: summary?.counts.paid ?? 0,
+                    total: summary?.counts.total ?? 0,
+                  })}
                 </p>
               </div>
-            </div>
-            <div className="grid grid-cols-12 gap-1">
-              {Array.from({ length: 12 }).map((_, index) => (
+              <div className="relative mt-5 h-5 overflow-hidden rounded-full border-2 border-[#0b2545] bg-[#e2f6ff] shadow-[0_3px_0_#0b2545] dark:border-cyan-200/35 dark:bg-slate-900">
                 <div
-                  key={index}
-                  className="h-10 rounded-md bg-gradient-to-t from-[#35b9ff] to-[#29c776] shadow-sm dark:from-cyan-400 dark:to-fuchsia-400"
-                  style={{ opacity: 0.35 + index * 0.045 }}
+                  className="h-full rounded-full bg-gradient-to-r from-[#29c776] via-[#35b9ff] to-[#ffd45a] transition-[width] duration-500"
+                  style={{ width: `${monthlyProgress}%` }}
                 />
-              ))}
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-xl border-2 border-[#29c776] bg-[#ddfbea] px-3 py-2 font-extrabold text-[#16a063] dark:bg-emerald-400/18 dark:text-emerald-100">
+                  <p>{t('dashboard.metric.paid')}</p>
+                  <p className="mt-1 text-sm">
+                    {summary
+                      ? formatMoney(
+                          summary.totals.paid,
+                          language,
+                          appearance.currency,
+                        )
+                      : '...'}
+                  </p>
+                </div>
+                <div className="rounded-xl border-2 border-[#ff6b7a] bg-[#ffe4e8] px-3 py-2 font-extrabold text-[#d64b58] dark:bg-pink-400/18 dark:text-pink-100">
+                  <p>{t('dashboard.metric.remaining')}</p>
+                  <p className="mt-1 text-sm">
+                    {summary
+                      ? formatMoney(
+                          summary.totals.remaining,
+                          language,
+                          appearance.currency,
+                        )
+                      : '...'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3">
         <MetricCard
           title={t('dashboard.metric.planned')}
           value={
@@ -263,7 +310,7 @@ export function DashboardPage() {
         />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>{t('dashboard.remainingTitle')}</CardTitle>

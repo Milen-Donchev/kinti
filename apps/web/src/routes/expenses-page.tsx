@@ -113,15 +113,15 @@ export function ExpensesPage() {
   }, [activeFilter, expensesQuery.data, searchQuery])
 
   return (
-    <div className="grid gap-6">
-      <section className="overflow-hidden rounded-3xl border-2 border-[#35b9ff] bg-[#e2f6ff] p-5 shadow-[0_7px_0_#35b9ff] dark:bg-[#15334a]">
+    <div className="grid gap-5">
+      <section className="overflow-hidden rounded-3xl border-2 border-[#35b9ff] bg-[#e2f6ff] p-4 shadow-[0_6px_0_#35b9ff] dark:bg-[#15334a]">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <Badge className="border-2 border-[#35b9ff] bg-white text-[#1688c7] shadow-[0_3px_0_#35b9ff] dark:bg-slate-950 dark:text-cyan-200">
               <ReceiptText size={13} className="mr-1" />
               {t('expenses.badge')}
             </Badge>
-            <h1 className="mt-3 text-3xl font-extrabold tracking-normal">
+            <h1 className="mt-3 text-2xl font-extrabold tracking-normal">
               {t('expenses.title')}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[rgb(var(--muted-foreground))]">
@@ -155,7 +155,7 @@ export function ExpensesPage() {
               key={filter}
               type="button"
               className={cn(
-                'rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-extrabold shadow-[0_3px_0_rgb(var(--border))] transition-all hover:-translate-y-0.5 hover:bg-[rgb(var(--surface-subtle))]',
+                'cursor-pointer rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-extrabold shadow-[0_3px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface-subtle))]',
                 activeFilter === filter &&
                   'border-[#29c776] bg-[#ddfbea] text-[#16a063] shadow-[0_3px_0_#16a063] dark:bg-[#153a2b] dark:text-[#36d887] dark:shadow-[0_3px_0_#0f7f50]',
               )}
@@ -176,7 +176,7 @@ export function ExpensesPage() {
       ) : null}
 
       {expensesQuery.data?.length && filteredExpenses.length ? (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {filteredExpenses.map((expense) => {
             const Icon = getExpenseIcon(expense.icon)
             const iconTone = getIconTone(expense.icon)
@@ -187,7 +187,7 @@ export function ExpensesPage() {
             return (
               <Card
                 key={expense.id}
-                className={`relative cursor-pointer overflow-hidden rounded-2xl shadow-[0_4px_0_rgb(var(--border))] ${iconTone.soft} ${iconTone.border} ${iconTone.glow} transition-transform hover:-translate-y-0.5`}
+                className={`relative cursor-pointer overflow-hidden rounded-2xl shadow-[0_4px_0_rgb(var(--border))] ${iconTone.soft} ${iconTone.border} ${iconTone.glow} transition-colors`}
                 role="button"
                 tabIndex={0}
                 onClick={() => navigate(`/expenses/${expense.id}`)}
@@ -266,8 +266,8 @@ export function ExpensesPage() {
 
       {expensesQuery.data && expensesQuery.data.length === 0 ? (
         <Card className="overflow-hidden border-[#35b9ff] bg-[#e2f6ff] dark:bg-[#15334a]">
-          <CardContent className="grid place-items-center gap-4 py-12 text-center">
-            <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[#35b9ff] text-white shadow-[0_5px_0_#1688c7]">
+          <CardContent className="grid place-items-center gap-4 py-10 text-center">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#35b9ff] text-white shadow-[0_5px_0_#1688c7]">
               <ReceiptText size={22} />
             </div>
             <div>
@@ -365,7 +365,7 @@ function ExpenseActionsMenu({
       </PopoverTrigger>
       <PopoverContent align="end" className="grid w-44 gap-2 p-2">
         <button
-          className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-extrabold text-[rgb(var(--foreground))] hover:bg-[rgb(var(--surface-subtle))]"
+          className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-extrabold text-[rgb(var(--foreground))] hover:bg-[rgb(var(--surface-subtle))]"
           type="button"
           onClick={onEdit}
         >
@@ -373,7 +373,7 @@ function ExpenseActionsMenu({
           {t('expenses.edit')}
         </button>
         <button
-          className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-extrabold text-[rgb(var(--danger))] hover:bg-rose-50 dark:hover:bg-rose-950/30"
+          className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-extrabold text-[rgb(var(--danger))] hover:bg-rose-50 dark:hover:bg-rose-950/30"
           type="button"
           onClick={onArchive}
         >
@@ -488,7 +488,7 @@ function EditExpenseModal({
       className="sm:max-w-3xl"
     >
       <form
-        className="grid gap-6"
+        className="grid gap-5"
         onSubmit={form.handleSubmit((values) => updateMutation.mutate(values))}
       >
         {updateMutation.isError ? (
@@ -549,7 +549,7 @@ function EditExpenseModal({
           />
         </section>
 
-        <section className="grid gap-7 rounded-3xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-[0_5px_0_rgb(var(--border))] sm:p-5">
+        <section className="grid gap-6 rounded-3xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-[0_5px_0_rgb(var(--border))] sm:p-5">
           <Controller
             control={form.control}
             name="type"
@@ -779,7 +779,7 @@ function OptionGroup<TValue extends string>({
             <button
               key={option.value}
               className={cn(
-                'h-full min-h-[118px] rounded-2xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-left shadow-[0_5px_0_rgb(var(--border))] transition-all hover:-translate-y-0.5 hover:bg-[rgb(var(--surface-subtle))] hover:shadow-[0_7px_0_rgb(var(--border))]',
+                'h-full min-h-[118px] cursor-pointer rounded-2xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-left shadow-[0_5px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface-subtle))]',
                 isSelected &&
                   'border-[#29c776] bg-[#ddfbea] shadow-[0_5px_0_#16a063] ring-4 ring-white dark:bg-[#153a2b] dark:shadow-[0_5px_0_#0f7f50] dark:ring-slate-950',
               )}
@@ -835,7 +835,7 @@ function IconPicker({
             <button
               key={option.value}
               className={cn(
-                'group relative grid aspect-square place-items-center rounded-2xl border-2 bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_5px_0_rgb(var(--border))] transition-all hover:-translate-y-0.5 hover:shadow-[0_7px_0_rgb(var(--border))]',
+                'group relative grid aspect-square cursor-pointer place-items-center rounded-2xl border-2 bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_5px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface-subtle))]',
                 tone.border,
                 isSelected &&
                   `${tone.soft} text-[rgb(var(--foreground))] ring-4 ring-white dark:ring-slate-950`,

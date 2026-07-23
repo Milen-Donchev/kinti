@@ -49,7 +49,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-end bg-slate-950/28 p-0 backdrop-blur-sm dark:bg-black/60 sm:place-items-center sm:p-6"
+      className="fixed inset-0 z-50 grid place-items-end bg-slate-950/28 p-0 backdrop-blur-sm dark:bg-black/60 sm:place-items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -67,9 +67,9 @@ export function Modal({
         )}
       >
         <div className="h-2 bg-gradient-to-r from-[#29c776] via-[#35b9ff] to-[#ff6b7a]" />
-        <header className="flex items-start justify-between gap-4 border-b-2 border-[rgb(var(--border))] bg-[rgb(var(--surface-subtle))] px-5 py-4">
+        <header className="flex items-start justify-between gap-4 border-b-2 border-[rgb(var(--border))] bg-[rgb(var(--surface-subtle))] px-4 py-3.5">
           <div className="min-w-0">
-            <h2 id="modal-title" className="text-xl font-extrabold tracking-normal">
+            <h2 id="modal-title" className="text-lg font-extrabold tracking-normal">
               {title}
             </h2>
             {description ? (
@@ -79,7 +79,7 @@ export function Modal({
             ) : null}
           </div>
           <button
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_4px_0_rgb(var(--border))] transition-all hover:translate-y-0.5 hover:text-[rgb(var(--foreground))] hover:shadow-[0_2px_0_rgb(var(--border))] active:translate-y-1 active:shadow-none"
+            className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_4px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface-subtle))] hover:text-[rgb(var(--foreground))]"
             type="button"
             aria-label={closeLabel}
             onClick={onClose}
@@ -87,7 +87,7 @@ export function Modal({
             <X size={18} />
           </button>
         </header>
-        <div className="max-h-[calc(92vh-86px)] overflow-y-auto px-5 py-5">
+        <div className="max-h-[calc(92vh-78px)] overflow-y-auto px-4 py-4">
           {children}
         </div>
       </section>

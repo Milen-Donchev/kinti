@@ -6,6 +6,7 @@ import {
   CircleDollarSign,
   Loader2,
   ReceiptText,
+  RefreshCw,
   Undo2,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -54,6 +55,16 @@ function formatDate(value: string, language: string) {
   return new Intl.DateTimeFormat(language, {
     dateStyle: 'medium',
   }).format(parseDateValue(value))
+}
+
+function formatPeriodLabel(
+  period: { month: number; year: number },
+  language: string,
+) {
+  return new Intl.DateTimeFormat(language, {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(period.year, period.month - 1, 1))
 }
 
 function parseDateValue(value: string) {
@@ -121,9 +132,14 @@ export function ExpenseDetailsPage() {
 
   if (expenseQuery.isLoading) {
     return (
-      <Card>
-        <CardContent className="pt-5 text-sm text-[rgb(var(--muted-foreground))]">
-          {t('expenses.loading')}
+      <Card className="overflow-hidden border-[#35b9ff] bg-[#e2f6ff] dark:bg-[#15334a]">
+        <CardContent className="grid place-items-center gap-4 py-10 text-center">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#35b9ff] text-white shadow-[0_5px_0_#1688c7]">
+            <Loader2 className="animate-spin" size={22} />
+          </div>
+          <p className="text-sm font-extrabold text-[rgb(var(--muted-foreground))]">
+            {t('expenseDetails.loading')}
+          </p>
         </CardContent>
       </Card>
     )
@@ -131,17 +147,30 @@ export function ExpenseDetailsPage() {
 
   if (expenseQuery.isError || !expense) {
     return (
-      <Card className="border-[#ff6b7a] bg-[#ffe4e8] dark:bg-[#4f232c]">
+      <Card className="overflow-hidden border-[#ff6b7a] bg-[#ffe4e8] dark:bg-[#4f232c]">
         <CardContent className="grid gap-4 py-8">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#ff6b7a] text-white shadow-[0_5px_0_#d64b58]">
+            <ReceiptText size={22} />
+          </div>
           <p className="text-sm font-extrabold text-[rgb(var(--danger))]">
             {t('expenseDetails.loadError')}
           </p>
-          <Button asChild variant="secondary">
-            <Link to="/expenses">
-              <ArrowLeft size={16} />
-              {t('expenseDetails.backToExpenses')}
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => void expenseQuery.refetch()}
+            >
+              <RefreshCw size={16} />
+              {t('common.retry')}
+            </Button>
+            <Button asChild variant="secondary">
+              <Link to="/expenses">
+                <ArrowLeft size={16} />
+                {t('expenseDetails.backToExpenses')}
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )
@@ -153,7 +182,7 @@ export function ExpenseDetailsPage() {
   const importanceTone = getImportanceTone(expense.importance)
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <Button asChild className="w-fit" variant="secondary">
         <Link to="/expenses">
           <ArrowLeft size={16} />
@@ -162,21 +191,21 @@ export function ExpenseDetailsPage() {
       </Button>
 
       <section
-        className={`overflow-hidden rounded-3xl border-2 p-5 shadow-[0_7px_0_rgb(var(--border))] ${iconTone.soft} ${iconTone.border}`}
+        className={`overflow-hidden rounded-3xl border-2 p-4 shadow-[0_6px_0_rgb(var(--border))] ${iconTone.soft} ${iconTone.border}`}
       >
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div className="flex min-w-0 gap-4">
             <div
-              className={`grid h-16 w-16 shrink-0 place-items-center rounded-2xl ${iconTone.bg}`}
+              className={`grid h-14 w-14 shrink-0 place-items-center rounded-2xl ${iconTone.bg}`}
             >
-              <Icon size={28} />
+                <Icon size={24} />
             </div>
             <div className="min-w-0">
               <Badge className={`border-2 ${periodTone.border} ${periodTone.soft}`}>
                 <CalendarDays size={13} className="mr-1" />
                 {translateBillingPeriod(expense.billingPeriod, t)}
               </Badge>
-              <h1 className="mt-3 truncate text-3xl font-extrabold tracking-normal">
+              <h1 className="mt-3 truncate text-2xl font-extrabold tracking-normal">
                 {expense.name}
               </h1>
               <p className="mt-2 text-sm leading-6 text-[rgb(var(--muted-foreground))]">
@@ -186,7 +215,7 @@ export function ExpenseDetailsPage() {
           </div>
 
           <div className="grid gap-3 sm:min-w-[260px]">
-            <p className="text-3xl font-extrabold">
+            <p className="text-2xl font-extrabold">
               {formatMoney(
                 expense.defaultAmount,
                 language,
@@ -222,7 +251,7 @@ export function ExpenseDetailsPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3">
         <MetricCard
           title={t('expenseDetails.defaultAmount')}
           value={formatMoney(expense.defaultAmount, language, appearance.currency)}
@@ -239,6 +268,54 @@ export function ExpenseDetailsPage() {
           icon={ReceiptText}
         />
       </section>
+
+      <Card
+        className={
+          currentPayment
+            ? 'border-[#29c776] bg-[#ddfbea] dark:bg-[#153a2b]'
+            : 'border-[#ffd45a] bg-[#fff4ce] dark:bg-[#493919]'
+        }
+      >
+        <CardContent className="flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className={
+                currentPayment
+                  ? 'grid h-12 w-12 place-items-center rounded-2xl bg-[#29c776] text-white shadow-[0_4px_0_#16a063]'
+                  : 'grid h-12 w-12 place-items-center rounded-2xl bg-[#ffd45a] text-slate-950 shadow-[0_4px_0_#d39d24]'
+              }
+            >
+              {currentPayment ? <Check size={20} /> : <CalendarDays size={20} />}
+            </div>
+            <div>
+              <p className="text-sm font-extrabold">
+                {currentPayment
+                  ? t('expenseDetails.currentPeriodPaid')
+                  : t('expenseDetails.currentPeriodOpen')}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[rgb(var(--muted-foreground))]">
+                {t('expenseDetails.currentPeriodDescription', {
+                  period: formatPeriodLabel(currentPeriod, language),
+                })}
+              </p>
+            </div>
+          </div>
+          {currentPayment ? (
+            <p className="text-lg font-extrabold">
+              {formatMoney(
+                currentPayment.amountSnapshot,
+                language,
+                appearance.currency,
+              )}
+            </p>
+          ) : (
+            <Button type="button" onClick={() => setExpenseToMarkPaid(expense)}>
+              <Check size={17} />
+              {t('dashboard.markPaid')}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

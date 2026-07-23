@@ -44,7 +44,7 @@ export function DatePicker({
       <PopoverTrigger asChild>
         <Button
           className={cn(
-            'h-12 w-full justify-start rounded-xl border-2 bg-[rgb(var(--surface))] text-left font-extrabold normal-case tracking-normal shadow-[0_4px_0_rgb(var(--border))] hover:bg-[#e2f6ff] dark:hover:bg-[#15334a]',
+            'h-11 w-full justify-start rounded-xl border-2 bg-[rgb(var(--surface))] text-left font-extrabold normal-case tracking-normal shadow-[0_4px_0_rgb(var(--border))] hover:bg-[#e2f6ff] dark:hover:bg-[#15334a]',
             !selectedDate && 'text-[rgb(var(--muted))]',
           )}
           id={id}

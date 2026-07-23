@@ -1,4 +1,5 @@
 {{- if .Values.ingress.enabled }}
+{{- $hosts := .Values.ingress.hosts | default (list .Values.ingress.host) }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -6,24 +7,37 @@ metadata:
   namespace: {{ .Release.Namespace }}
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ .Values.ingress.name }}-strip-api-prefix@kubernetescrd
+    {{- if .Values.ingress.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.clusterIssuer }}
+    {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        {{- range $hosts }}
+        - {{ . }}
+        {{- end }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    {{- range $hosts }}
+    - host: {{ . }}
       http:
         paths:
           - path: /api
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.api.name }}
+                name: {{ $.Values.api.name }}
                 port:
-                  number: {{ .Values.api.service.port }}
+                  number: {{ $.Values.api.service.port }}
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.web.name }}
+                name: {{ $.Values.web.name }}
                 port:
-                  number: {{ .Values.web.service.port }}
+                  number: {{ $.Values.web.service.port }}
+    {{- end }}
 {{- end }}

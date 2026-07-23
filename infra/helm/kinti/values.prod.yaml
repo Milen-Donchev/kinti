@@ -16,12 +16,19 @@ web:
     tag: latest
     pullPolicy: IfNotPresent
   config:
-    VITE_API_URL: http://46.101.230.169.sslip.io/api
+    VITE_API_URL: https://levko.bg/api
     VITE_SUPABASE_URL: https://auzgqefookfzxmbejpjx.supabase.co
 
 ingress:
   className: traefik
-  host: 46.101.230.169.sslip.io
+  host: levko.bg
+  hosts:
+    - levko.bg
+    - www.levko.bg
+  tls:
+    enabled: true
+    secretName: levko-bg-tls
+    clusterIssuer: letsencrypt-prod
 
 imagePullSecrets:
   - name: ghcr-pull-secret

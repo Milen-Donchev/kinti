@@ -119,7 +119,7 @@ export function AddExpenseModal({ isOpen, onClose }: AddExpenseModalProps) {
     >
       <form
         id={formId}
-        className="grid gap-6"
+        className="grid gap-5"
         onSubmit={form.handleSubmit((values) =>
           createExpenseMutation.mutate(values),
         )}
@@ -182,7 +182,7 @@ export function AddExpenseModal({ isOpen, onClose }: AddExpenseModalProps) {
           />
         </section>
 
-        <section className="grid gap-7 rounded-3xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-[0_5px_0_rgb(var(--border))] sm:p-5">
+        <section className="grid gap-6 rounded-3xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-[0_5px_0_rgb(var(--border))] sm:p-5">
           <Controller
             control={form.control}
             name="type"
@@ -261,7 +261,7 @@ export function AddExpenseModal({ isOpen, onClose }: AddExpenseModalProps) {
                       <button
                         key={option.value}
                         className={cn(
-                          'group relative grid aspect-square place-items-center rounded-2xl border-2 bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_5px_0_rgb(var(--border))] transition-all hover:-translate-y-0.5 hover:shadow-[0_7px_0_rgb(var(--border))]',
+                          'group relative grid aspect-square cursor-pointer place-items-center rounded-2xl border-2 bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_5px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface-subtle))]',
                           tone.border,
                           isSelected &&
                             `${tone.soft} text-[rgb(var(--foreground))] ring-4 ring-white dark:ring-slate-950`,
@@ -411,7 +411,7 @@ function OptionGroup<TValue extends string>({
             <button
               key={option.value}
               className={cn(
-                'h-full min-h-[118px] rounded-2xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-left shadow-[0_5px_0_rgb(var(--border))] transition-all hover:-translate-y-0.5 hover:bg-[rgb(var(--surface-subtle))] hover:shadow-[0_7px_0_rgb(var(--border))]',
+                'h-full min-h-[118px] cursor-pointer rounded-2xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-left shadow-[0_5px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface-subtle))]',
                 isSelected &&
                   'border-[#29c776] bg-[#ddfbea] shadow-[0_5px_0_#16a063] ring-4 ring-white dark:bg-[#153a2b] dark:shadow-[0_5px_0_#0f7f50] dark:ring-slate-950',
               )}

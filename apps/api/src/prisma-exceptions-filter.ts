@@ -1,6 +1,35 @@
-import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
+
+type ClientErrorBody = {
+  message: string;
+  error: string;
+  statusCode: number;
+  code: string;
+};
+
+type PrismaErrorLogContext = {
+  errorName: string;
+  method?: string;
+  path?: string;
+  prismaCode?: string;
+  clientVersion?: string;
+  meta?: unknown;
+  message: string;
+};
+
+function redactSensitiveText(value: string) {
+  return value
+    .replace(/postgres(?:ql)?:\/\/[^@\s]+@/gi, 'postgresql://[redacted]@')
+    .replace(/(password=)[^&\s]+/gi, '$1[redacted]');
+}
 
 @Catch(
   Prisma.PrismaClientKnownRequestError,
@@ -10,30 +39,100 @@ import type { Response } from 'express';
   Prisma.PrismaClientValidationError,
 )
 export class PrismaExceptionFilter implements ExceptionFilter {
-  catch(exception: Error, host: ArgumentsHost) {
-    const response = host.switchToHttp().getResponse<Response>();
+  private readonly logger = new Logger(PrismaExceptionFilter.name);
 
+  catch(exception: Error, host: ArgumentsHost) {
+    const http = host.switchToHttp();
+    const request = http.getRequest<Request>();
+    const response = http.getResponse<Response>();
+    const clientError = this.getClientError(exception);
+
+    this.logPrismaError(exception, {
+      method: request.method,
+      path: request.originalUrl || request.url,
+    });
+
+    return response.status(clientError.statusCode).json(clientError);
+  }
+
+  private getClientError(exception: Error): ClientErrorBody {
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       switch (exception.code) {
         case 'P2002':
-          return response.status(409).json({
+          return {
             message: 'Resource already exists',
-          });
+            error: 'Conflict',
+            statusCode: HttpStatus.CONFLICT,
+            code: 'DATABASE_CONFLICT',
+          };
 
         case 'P2025':
-          return response.status(404).json({
+          return {
             message: 'Record not found',
-          });
+            error: 'Not Found',
+            statusCode: HttpStatus.NOT_FOUND,
+            code: 'DATABASE_RECORD_NOT_FOUND',
+          };
 
         case 'P2007':
-          return response.status(400).json({
+          return {
             message: 'Invalid request format',
-          });
+            error: 'Bad Request',
+            statusCode: HttpStatus.BAD_REQUEST,
+            code: 'DATABASE_INVALID_DATA',
+          };
       }
     }
 
-    return response.status(500).json({
-      message: 'Database error: ' + exception.name,
-    });
+    if (exception instanceof Prisma.PrismaClientValidationError) {
+      return {
+        message: 'Invalid database query',
+        error: 'Bad Request',
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: 'DATABASE_QUERY_VALIDATION_ERROR',
+      };
+    }
+
+    if (exception instanceof Prisma.PrismaClientInitializationError) {
+      return {
+        message: 'Database connection is not available',
+        error: 'Service Unavailable',
+        statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+        code: 'DATABASE_CONNECTION_UNAVAILABLE',
+      };
+    }
+
+    return {
+      message: 'Unexpected database error',
+      error: 'Internal Server Error',
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      code: 'DATABASE_ERROR',
+    };
+  }
+
+  private logPrismaError(
+    exception: Error,
+    requestContext: Pick<PrismaErrorLogContext, 'method' | 'path'>,
+  ) {
+    const context: PrismaErrorLogContext = {
+      ...requestContext,
+      errorName: exception.name,
+      message: redactSensitiveText(exception.message),
+    };
+
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      context.prismaCode = exception.code;
+      context.clientVersion = exception.clientVersion;
+      context.meta = exception.meta;
+    }
+
+    if (exception instanceof Prisma.PrismaClientInitializationError) {
+      context.clientVersion = exception.clientVersion;
+    }
+
+    this.logger.error(
+      `Prisma error while handling ${context.method ?? 'UNKNOWN'} ${context.path ?? 'UNKNOWN'}`,
+      JSON.stringify(context),
+    );
   }
 }

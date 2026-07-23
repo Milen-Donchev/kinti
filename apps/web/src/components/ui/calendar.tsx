@@ -15,9 +15,9 @@ export function Calendar({ className, classNames, ...props }: DayPickerProps) {
         caption_label: 'text-sm font-extrabold',
         nav: 'absolute inset-x-0 top-4 flex items-center justify-between px-4',
         button_previous:
-          'grid h-9 w-9 place-items-center rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_3px_0_rgb(var(--border))] transition-all hover:translate-y-0.5 hover:bg-[rgb(var(--surface-subtle))] hover:text-[rgb(var(--foreground))] hover:shadow-[0_2px_0_rgb(var(--border))] active:translate-y-1 active:shadow-none',
+          'grid h-9 w-9 cursor-pointer place-items-center rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_3px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface-subtle))] hover:text-[rgb(var(--foreground))]',
         button_next:
-          'grid h-9 w-9 place-items-center rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_3px_0_rgb(var(--border))] transition-all hover:translate-y-0.5 hover:bg-[rgb(var(--surface-subtle))] hover:text-[rgb(var(--foreground))] hover:shadow-[0_2px_0_rgb(var(--border))] active:translate-y-1 active:shadow-none',
+          'grid h-9 w-9 cursor-pointer place-items-center rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--muted-foreground))] shadow-[0_3px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface-subtle))] hover:text-[rgb(var(--foreground))]',
         month_grid: 'w-full border-collapse space-y-1',
         weekdays: 'grid grid-cols-7',
         weekday:
@@ -25,7 +25,7 @@ export function Calendar({ className, classNames, ...props }: DayPickerProps) {
         week: 'grid grid-cols-7',
         day: 'grid h-10 w-10 place-items-center p-0 text-sm',
         day_button:
-          'grid h-10 w-10 place-items-center rounded-xl border-2 border-transparent font-extrabold transition-all hover:-translate-y-0.5 hover:border-[#35b9ff] hover:bg-[#e2f6ff] hover:text-[#1688c7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))] dark:hover:bg-[#15334a] dark:hover:text-cyan-100',
+          'grid h-10 w-10 cursor-pointer place-items-center rounded-xl border-2 border-transparent font-extrabold transition-colors hover:border-[#35b9ff] hover:bg-[#e2f6ff] hover:text-[#1688c7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))] dark:hover:bg-[#15334a] dark:hover:text-cyan-100',
         today:
           '[&>button]:border-[#ffd45a] [&>button]:bg-[#fff4ce] [&>button]:text-[#8a6414] dark:[&>button]:bg-[#493919] dark:[&>button]:text-[#ffd45a]',
         selected:

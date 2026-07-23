@@ -5,10 +5,12 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
+  Eye,
   Loader2,
   Undo2,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { useAppearance } from '@/app/appearance-context'
 import { Badge } from '@/components/ui/badge'
@@ -147,15 +149,15 @@ export function CalendarPage() {
   }
 
   return (
-    <div className="grid gap-6">
-      <section className="overflow-hidden rounded-3xl border-2 border-[#b77dff] bg-[#f0e4ff] p-5 shadow-[0_7px_0_#8e58d1] dark:bg-[#32224d]">
+    <div className="grid gap-5">
+      <section className="overflow-hidden rounded-3xl border-2 border-[#b77dff] bg-[#f0e4ff] p-4 shadow-[0_6px_0_#8e58d1] dark:bg-[#32224d]">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
             <Badge className="border-2 border-[#b77dff] bg-white text-[#8e58d1] shadow-[0_3px_0_#b77dff] dark:bg-slate-950 dark:text-violet-200">
               <CalendarDays size={13} className="mr-1" />
               {t('calendar.badge')}
             </Badge>
-            <h1 className="mt-3 text-3xl font-extrabold tracking-normal">
+            <h1 className="mt-3 text-2xl font-extrabold tracking-normal">
               {t('calendar.title')}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[rgb(var(--muted-foreground))]">
@@ -214,7 +216,28 @@ export function CalendarPage() {
         </Card>
       ) : null}
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      {expensesQuery.isError || paymentsQuery.isError ? (
+        <Card className="border-[#ff6b7a] bg-[#ffe4e8] dark:bg-[#4f232c]">
+          <CardContent className="flex flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-extrabold text-[rgb(var(--danger))]">
+              {t('calendar.loadError')}
+            </p>
+            <Button
+              className="w-fit"
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                void expensesQuery.refetch()
+                void paymentsQuery.refetch()
+              }}
+            >
+              {t('common.retry')}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <section className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="grid gap-2 rounded-3xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3 shadow-[0_5px_0_rgb(var(--border))]">
           <div className="grid grid-cols-7 gap-2">
             {getWeekdayLabels(language).map((label) => (
@@ -240,8 +263,8 @@ export function CalendarPage() {
                   type="button"
                   className={
                     selectedDay === day.dayOfMonth
-                      ? 'aspect-square rounded-2xl border-2 border-[#29c776] bg-[#ddfbea] p-2 text-left shadow-[0_4px_0_#16a063] dark:bg-[#153a2b] dark:shadow-[0_4px_0_#0f7f50]'
-                      : 'aspect-square rounded-2xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface-subtle))] p-2 text-left shadow-[0_3px_0_rgb(var(--border))] transition-all hover:-translate-y-0.5 hover:bg-[rgb(var(--surface))]'
+                      ? 'aspect-square cursor-pointer rounded-2xl border-2 border-[#29c776] bg-[#ddfbea] p-2 text-left shadow-[0_4px_0_#16a063] dark:bg-[#153a2b] dark:shadow-[0_4px_0_#0f7f50]'
+                      : 'aspect-square cursor-pointer rounded-2xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface-subtle))] p-2 text-left shadow-[0_3px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface))]'
                   }
                   onClick={() => setSelectedDay(day.dayOfMonth)}
                 >
@@ -294,6 +317,12 @@ export function CalendarPage() {
             </span>
           </div>
 
+          {paymentsQuery.isLoading && !expensesQuery.isLoading ? (
+            <p className="rounded-2xl border-2 border-dashed border-[rgb(var(--border))] bg-[rgb(var(--surface-subtle))] p-3 text-sm font-semibold text-[rgb(var(--muted-foreground))]">
+              {t('calendar.loadingPayments')}
+            </p>
+          ) : null}
+
           <div className="mt-5 grid gap-3">
             {selectedCalendarDay?.expenses.length ? (
               selectedCalendarDay.expenses.map((expense) => {
@@ -319,6 +348,7 @@ export function CalendarPage() {
                     }
                     markPaidLabel={t('dashboard.markPaid')}
                     undoLabel={t('dashboard.undoPayment')}
+                    viewLabel={t('calendar.viewExpense')}
                     isUndoPending={undoPaymentMutation.isPending}
                     onMarkPaid={() => setExpenseToMarkPaid(expense)}
                     onUndo={() => undoPaymentMutation.mutate(expense.id)}
@@ -336,8 +366,8 @@ export function CalendarPage() {
 
       {expensesQuery.data && expensesQuery.data.length === 0 ? (
         <Card className="overflow-hidden border-[#35b9ff] bg-[#e2f6ff] dark:bg-[#15334a]">
-          <CardContent className="grid place-items-center gap-4 py-12 text-center">
-            <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[#35b9ff] text-white shadow-[0_5px_0_#1688c7]">
+          <CardContent className="grid place-items-center gap-4 py-10 text-center">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#35b9ff] text-white shadow-[0_5px_0_#1688c7]">
               <CircleDollarSign size={22} />
             </div>
             <div>
@@ -452,6 +482,7 @@ function CalendarExpenseLine({
   meta,
   markPaidLabel,
   undoLabel,
+  viewLabel,
   isUndoPending,
   onMarkPaid,
   onUndo,
@@ -462,6 +493,7 @@ function CalendarExpenseLine({
   meta: string
   markPaidLabel: string
   undoLabel: string
+  viewLabel: string
   isUndoPending: boolean
   onMarkPaid: () => void
   onUndo: () => void
@@ -488,7 +520,17 @@ function CalendarExpenseLine({
         <p className="shrink-0 text-sm font-extrabold">{amount}</p>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          asChild
+          className="h-9 px-3 text-xs"
+          variant="ghost"
+        >
+          <Link to={`/expenses/${expense.id}`}>
+            <Eye size={14} />
+            {viewLabel}
+          </Link>
+        </Button>
         {payment ? (
           <Button
             className="h-9 px-3 text-xs"

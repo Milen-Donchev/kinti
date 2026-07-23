@@ -5,13 +5,13 @@ import {
   LogOut,
   Plus,
   Settings,
-  WalletCards,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
+import { BrandLogo } from '@/components/brand/brand-logo'
 import { useAuth } from '@/features/auth/auth-context'
 import { AddExpenseModal } from '@/features/expenses/add-expense-modal'
 import { useI18n } from '@/i18n/i18n-context'
@@ -77,15 +77,10 @@ export function AppShell() {
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[260px] border-r-2 border-[rgb(var(--border))] bg-white px-4 py-5 shadow-[6px_0_0_rgb(var(--border))] dark:bg-[rgb(var(--surface))] lg:block">
         <div className="flex h-full min-h-0 flex-col">
           <div className="flex items-center gap-3 px-2">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#29c776] text-white shadow-[0_4px_0_#16a063]">
-              <WalletCards size={20} />
-            </div>
-            <div>
-              <p className="text-base font-semibold">Kinti</p>
-              <p className="text-xs text-[rgb(var(--muted-foreground))]">
-                {t('common.tagline')}
-              </p>
-            </div>
+            <BrandLogo
+              wordmark={t('common.appName')}
+              tagline={t('common.tagline')}
+            />
           </div>
 
           <Button
@@ -152,7 +147,7 @@ export function AppShell() {
               {user?.email ?? t('common.signedIn')}
             </p>
             <button
-              className="mt-3 flex items-center gap-2 text-sm text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]"
+              className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]"
               type="button"
               onClick={() => void signOut()}
             >
@@ -166,17 +161,18 @@ export function AppShell() {
 
       <div className="min-w-0">
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 shadow-[0_4px_0_rgb(var(--border))] lg:hidden">
-          <div className="flex items-center gap-2 font-semibold">
-            <WalletCards size={20} className="text-[rgb(var(--accent))]" />
-            {t('common.appName')}
-          </div>
+          <BrandLogo
+            compact
+            markClassName="h-9 w-9 drop-shadow-[0_3px_0_#0f7f50]"
+            wordmark={t('common.appName')}
+          />
           <Button size="sm" onClick={openAddExpenseModal}>
             <Plus size={16} />
             {t('common.add')}
           </Button>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-5 lg:px-7 lg:py-7">
           <Outlet context={{ openAddExpenseModal }} />
         </main>
 

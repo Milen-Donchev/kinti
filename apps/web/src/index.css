@@ -128,6 +128,18 @@ a {
   background: rgb(var(--accent));
 }
 
+.levko-wordmark {
+  font-family:
+    "Baloo 2",
+    "Nunito",
+    "Arial Rounded MT Bold",
+    ui-rounded,
+    "Trebuchet MS",
+    sans-serif;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
 .kinti-raised {
   border: 2px solid rgb(var(--border));
   box-shadow: 0 5px 0 rgb(var(--border));
@@ -146,16 +158,14 @@ a {
   color: rgb(var(--foreground));
   background: rgb(var(--surface));
   box-shadow: 0 6px 0 rgb(var(--border));
+  cursor: pointer;
   transition:
-    transform 150ms ease,
-    box-shadow 150ms ease,
     border-color 150ms ease,
     background 150ms ease;
 }
 
 .kinti-choice-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 0 rgb(var(--border));
+  background: rgb(var(--surface-subtle));
 }
 
 .kinti-choice-card-active {
