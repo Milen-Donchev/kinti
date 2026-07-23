@@ -39,35 +39,48 @@ export const visualTones = [
   },
 ] as const
 
-const iconToneIndexes: Record<string, number> = {
-  receipt: 0,
-  home: 1,
-  bolt: 4,
-  lightbulb: 4,
-  wifi: 1,
-  phone: 5,
-  smartphone: 5,
-  tv: 2,
-  music: 2,
-  cloud: 1,
-  shield: 0,
-  landmark: 5,
-  car: 3,
-  plane: 1,
-  utensils: 4,
-  coffee: 3,
-  shopping: 2,
-  health: 3,
-  fitness: 0,
-  education: 1,
-  books: 5,
-  gaming: 2,
-  movies: 2,
-  tools: 4,
+const categoryToneIndexes = {
+  money: 0,
+  home: 4,
+  digital: 2,
+  communication: 5,
+  lifestyle: 3,
+  growth: 1,
+  travel: 1,
+  admin: 5,
+} as const
+
+const iconCategories: Record<string, keyof typeof categoryToneIndexes> = {
+  receipt: 'money',
+  landmark: 'money',
+  shield: 'admin',
+  home: 'home',
+  bolt: 'home',
+  lightbulb: 'home',
+  wifi: 'communication',
+  phone: 'communication',
+  smartphone: 'communication',
+  tv: 'digital',
+  music: 'digital',
+  cloud: 'digital',
+  gaming: 'digital',
+  movies: 'digital',
+  utensils: 'lifestyle',
+  coffee: 'lifestyle',
+  shopping: 'lifestyle',
+  health: 'lifestyle',
+  fitness: 'growth',
+  education: 'growth',
+  books: 'growth',
+  car: 'travel',
+  plane: 'travel',
+  tools: 'admin',
 }
 
 export function getIconTone(icon: string) {
-  return visualTones[iconToneIndexes[icon] ?? 0]
+  const category = iconCategories[icon] ?? 'money'
+
+  return visualTones[categoryToneIndexes[category]]
 }
 
 export function getBillingPeriodTone(period: BillingPeriod) {

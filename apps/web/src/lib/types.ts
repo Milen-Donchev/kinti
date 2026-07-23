@@ -19,6 +19,20 @@ export type Expense = {
   updatedAt: string
 }
 
+export type ExpensePayment = {
+  id: string
+  expenseId: string
+  userId: string
+  periodMonth: number
+  periodYear: number
+  paidAt: string
+  amountSnapshot: string
+}
+
+export type ExpenseDetails = Expense & {
+  payments: ExpensePayment[]
+}
+
 export type DashboardSummary = {
   period: {
     month: number

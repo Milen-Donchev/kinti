@@ -35,6 +35,11 @@ const navigationItems: Array<{
     to: '/expenses',
     icon: CreditCard,
   },
+  {
+    label: 'nav.calendar',
+    to: '/calendar',
+    icon: CalendarDays,
+  },
 ]
 
 const mobileNavigationItems = [
@@ -175,7 +180,7 @@ export function AppShell() {
           <Outlet context={{ openAddExpenseModal }} />
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-3 border-t-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-[0_-4px_0_rgb(var(--border))] lg:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-[0_-4px_0_rgb(var(--border))] lg:hidden">
           {mobileNavigationItems.map((item) => (
             <NavLink
               key={item.to}
