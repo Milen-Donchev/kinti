@@ -5,6 +5,33 @@ type ApiOptions = Omit<RequestInit, 'body'> & {
   body?: unknown
 }
 
+type ApiErrorBody = {
+  message?: string | string[]
+  error?: string
+  statusCode?: number
+  code?: string
+}
+
+async function readErrorMessage(response: Response) {
+  const fallbackMessage = `Request failed with status ${response.status}`
+  const contentType = response.headers.get('content-type') ?? ''
+
+  if (!contentType.includes('application/json')) {
+    return (await response.text()) || fallbackMessage
+  }
+
+  try {
+    const body = (await response.json()) as ApiErrorBody
+    const message = Array.isArray(body.message)
+      ? body.message.join('\n')
+      : body.message
+
+    return message || body.error || fallbackMessage
+  } catch {
+    return fallbackMessage
+  }
+}
+
 export async function apiRequest<TResponse>(
   path: string,
   options: ApiOptions = {},
@@ -28,8 +55,7 @@ export async function apiRequest<TResponse>(
   })
 
   if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Request failed with status ${response.status}`)
+    throw new Error(await readErrorMessage(response))
   }
 
   if (response.status === 204) {

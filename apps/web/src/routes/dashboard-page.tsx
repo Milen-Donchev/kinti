@@ -1,29 +1,36 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowDownRight,
-  ArrowUpRight,
+  CalendarDays,
   Check,
-  ChevronLeft,
-  ChevronRight,
+  ClipboardList,
   CircleDollarSign,
+  Clock3,
   Loader2,
-  Sparkles,
   Undo2,
+  X,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 
 import { useAppearance } from '@/app/appearance-context'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { getExpenseIcon } from '@/features/expenses/expense-options'
 import { MarkExpensePaidModal } from '@/features/expenses/mark-expense-paid-modal'
 import { useI18n } from '@/i18n/i18n-context'
 import { apiRequest } from '@/lib/api'
-import type { Currency, DashboardSummary, Expense } from '@/lib/types'
+import { undoPaymentInCache } from '@/lib/query-cache-updates'
+import { queryKeys } from '@/lib/query-keys'
+import type { Currency, DashboardSummary, ExpenseSummary } from '@/lib/types'
 import { getIconTone, visualTones } from '@/lib/visuals'
 import lightJumbotronImage from '@/assets/calm-finance-hero.jpg'
 import darkJumbotronImage from '@/assets/tokyo-finance-jumbotron.jpg'
-import dashboardMascotImage from '@/assets/mascots/levko-dashboard-mascot.png'
+import dashboardMascotImage from '@/assets/mascots/levko-dashboard-mascot-ui.png'
 
 function getCurrentPeriod() {
   const now = new Date()
@@ -34,26 +41,24 @@ function getCurrentPeriod() {
   }
 }
 
-function shiftPeriod(
-  period: { month: number; year: number },
-  offset: number,
-) {
-  const date = new Date(period.year, period.month - 1 + offset, 1)
-
-  return {
-    month: date.getMonth() + 1,
-    year: date.getFullYear(),
-  }
-}
-
-function formatPeriodLabel(
-  period: { month: number; year: number },
-  language: string,
-) {
+function formatMonthLabel(month: number, language: string) {
   return new Intl.DateTimeFormat(language, {
     month: 'long',
-    year: 'numeric',
-  }).format(new Date(period.year, period.month - 1, 1))
+  }).format(new Date(2026, month - 1, 1))
+}
+
+const yearOptions = Array.from({ length: 101 }, (_, index) => 1950 + index)
+
+function getInitialYearScrollOffset(year: number) {
+  const itemHeight = 44
+  const visibleItemsBeforeSelected = 3
+  const yearIndex = yearOptions.indexOf(year)
+
+  if (yearIndex < 0) {
+    return 0
+  }
+
+  return Math.max((yearIndex - visibleItemsBeforeSelected) * itemHeight, 0)
 }
 
 const currencyCodes: Record<Currency, string> = {
@@ -86,19 +91,104 @@ function getMonthlyProgress(summary: DashboardSummary | undefined) {
   return Math.min((paid / planned) * 100, 100)
 }
 
+function PeriodPickerButton({
+  label,
+  value,
+  clearLabel,
+  hasCustomValue,
+  onClear,
+  children,
+}: {
+  label: string
+  value: string
+  clearLabel: string
+  hasCustomValue: boolean
+  onClear: () => void
+  children: ReactNode
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <div className="relative min-w-0">
+        <PopoverTrigger asChild>
+          <Button
+            className="h-12 w-full justify-start rounded-2xl border-[#35b9ff] bg-white/92 pl-3 pr-8 text-left normal-case tracking-normal text-slate-950 shadow-[0_4px_0_#35b9ff] backdrop-blur dark:border-cyan-300/35 dark:bg-slate-950/80 dark:text-white dark:shadow-[0_4px_0_#164e75]"
+            type="button"
+            variant="secondary"
+          >
+            <CalendarDays size={15} />
+            <span className="min-w-0">
+              <span className="block text-[10px] leading-none text-slate-500 dark:text-cyan-100">
+                {label}
+              </span>
+              <span className="mt-1 block truncate text-xs">{value}</span>
+            </span>
+          </Button>
+        </PopoverTrigger>
+        {hasCustomValue ? (
+          <button
+            className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 cursor-pointer place-items-center rounded-lg border-2 border-[#ff6b7a] bg-[#ffe4e8] text-[#d64b58] shadow-[0_2px_0_#ff6b7a] transition-colors hover:brightness-105 dark:bg-pink-400/18 dark:text-pink-100"
+            type="button"
+            aria-label={clearLabel}
+            onClick={onClear}
+          >
+            <X size={13} />
+          </button>
+        ) : null}
+      </div>
+      <PopoverContent
+        className="w-[22rem] max-w-[calc(100vw-2rem)]"
+        align="start"
+        onClick={() => setIsOpen(false)}
+      >
+        {children}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function YearPickerOptions({
+  selectedYear,
+  onSelect,
+}: {
+  selectedYear: number
+  onSelect: (year: number) => void
+}) {
+  return (
+    <div
+      className="grid max-h-72 gap-2 overflow-y-auto pr-1"
+      ref={(node) => {
+        if (node) {
+          node.scrollTop = getInitialYearScrollOffset(selectedYear)
+        }
+      }}
+    >
+      {yearOptions.map((year) => (
+        <Button
+          key={year}
+          className="h-9 min-w-28 justify-start whitespace-nowrap px-3 text-[11px] normal-case tracking-normal"
+          type="button"
+          variant={selectedYear === year ? 'primary' : 'ghost'}
+          onClick={() => onSelect(year)}
+        >
+          {year}
+        </Button>
+      ))}
+    </div>
+  )
+}
+
 export function DashboardPage() {
   const { language, t } = useI18n()
   const { appearance } = useAppearance()
-  const [expenseToMarkPaid, setExpenseToMarkPaid] = useState<Expense | null>(
-    null,
-  )
+  const [expenseToMarkPaid, setExpenseToMarkPaid] =
+    useState<ExpenseSummary | null>(null)
   const queryClient = useQueryClient()
   const [period, setPeriod] = useState(getCurrentPeriod)
   const currentPeriod = getCurrentPeriod()
-  const isCurrentPeriod =
-    period.month === currentPeriod.month && period.year === currentPeriod.year
   const summaryQuery = useQuery({
-    queryKey: ['dashboard-summary', period.year, period.month],
+    queryKey: queryKeys.dashboardSummary(period),
     queryFn: () =>
       apiRequest<DashboardSummary>(
         `/dashboard/summary?periodMonth=${period.month}&periodYear=${period.year}`,
@@ -115,13 +205,24 @@ export function DashboardPage() {
           method: 'DELETE',
         },
       ),
-    onSuccess: async () => {
+    onMutate: async (expenseId) => {
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.dashboardSummary(period),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.payments(period),
+        }),
+      ])
+      undoPaymentInCache(queryClient, period, expenseId)
+    },
+    onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ['dashboard-summary', period.year, period.month],
+          queryKey: queryKeys.dashboardSummary(period),
         }),
         queryClient.invalidateQueries({
-          queryKey: ['payments', period.year, period.month],
+          queryKey: queryKeys.payments(period),
         }),
       ])
     },
@@ -129,33 +230,36 @@ export function DashboardPage() {
 
   return (
     <div className="grid gap-5">
-      <section className="relative overflow-hidden rounded-3xl border-2 border-[#b8d5ee] bg-white shadow-[0_8px_0_#b8d5ee] dark:border-[#3f5180] dark:bg-slate-950 dark:shadow-[0_8px_0_#27375f]">
-        <img
-          className="absolute inset-0 h-full w-full object-cover dark:hidden"
-          src={lightJumbotronImage}
-          alt=""
-        />
-        <img
-          className="absolute inset-0 hidden h-full w-full object-cover dark:block"
-          src={darkJumbotronImage}
-          alt=""
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-white/98 via-white/82 to-white/10 dark:from-slate-950/94 dark:via-slate-950/70 dark:to-slate-950/18" />
-        <div className="absolute inset-0 bg-gradient-to-t from-white/72 via-transparent to-transparent dark:from-slate-950/82" />
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="relative min-h-[300px] overflow-hidden rounded-3xl border-2 border-[#b8d5ee] bg-white shadow-[0_8px_0_#b8d5ee] dark:border-[#3f5180] dark:bg-slate-950 dark:shadow-[0_8px_0_#27375f]">
+          <img
+            className="absolute inset-0 h-full w-full object-cover dark:hidden"
+            src={lightJumbotronImage}
+            alt=""
+          />
+          <img
+            className="absolute inset-0 hidden h-full w-full object-cover dark:block"
+            src={darkJumbotronImage}
+            alt=""
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/98 via-white/84 to-white/28 dark:from-slate-950/94 dark:via-slate-950/74 dark:to-slate-950/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/74 via-transparent to-transparent dark:from-slate-950/84" />
+          <img
+            className="pointer-events-none absolute -right-4 bottom-0 z-10 hidden h-52 w-auto drop-shadow-[0_12px_0_rgba(11,37,69,0.18)] md:block lg:h-60 xl:-right-2 xl:h-64"
+            src={dashboardMascotImage}
+            alt=""
+          />
 
-        <div className="relative grid min-h-[320px] gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,0.92fr)_360px] lg:items-end">
-          <div className="self-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-xl border-2 border-[#29c776] bg-[#ddfbea] px-3 py-2 text-sm font-extrabold text-[#16a063] shadow-[0_4px_0_#29c776] dark:bg-[#153a2b] dark:text-[#36d887]">
-              <Sparkles size={16} />
-              {t('auth.badge')}
+          <div className="relative z-20 flex min-h-[300px] flex-col justify-between gap-8 p-5 sm:p-6 md:pr-56 lg:p-7 lg:pr-64 xl:pr-72">
+            <div className="pt-3 sm:pt-5">
+              <h1 className="max-w-xl text-3xl font-extrabold tracking-normal text-slate-950 dark:text-white sm:text-4xl">
+                {t('dashboard.title')}
+              </h1>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-700 dark:text-slate-200 sm:text-base">
+                {t('dashboard.description')}
+              </p>
             </div>
-            <h1 className="max-w-xl text-3xl font-extrabold tracking-normal text-slate-950 dark:text-white sm:text-4xl">
-              {t('dashboard.title')}
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-700 dark:text-slate-200 sm:text-base">
-              {t('dashboard.description')}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3">
               <span className="rounded-xl border-2 border-[#b8d5ee] bg-white px-3 py-2 text-sm font-extrabold text-slate-900 shadow-[0_4px_0_#b8d5ee] dark:border-white/20 dark:bg-white/12 dark:text-white dark:shadow-none">
                 {t('dashboard.hero.total', { count: summary?.counts.total ?? 0 })}
               </span>
@@ -167,55 +271,71 @@ export function DashboardPage() {
               </span>
             </div>
           </div>
+        </div>
 
-          <div className="relative grid gap-3 self-stretch pt-28 sm:pt-32 lg:self-end lg:pt-0">
-            <img
-              className="pointer-events-none absolute -left-2 top-5 z-10 h-40 w-auto drop-shadow-[0_12px_0_rgba(11,37,69,0.18)] sm:top-3 sm:h-48 lg:-left-24 lg:-top-8 lg:h-[300px]"
-              src={dashboardMascotImage}
-              alt=""
-            />
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {!isCurrentPeriod ? (
-                <Button
-                  className="h-10 bg-white/90 px-4 text-xs backdrop-blur dark:bg-slate-950/75"
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setPeriod(currentPeriod)}
-                >
-                  {t('dashboard.currentMonth')}
-                </Button>
-              ) : null}
-              <div className="flex items-center gap-2 rounded-2xl border-2 border-[#35b9ff] bg-white/90 p-1.5 shadow-[0_4px_0_#35b9ff] backdrop-blur dark:border-cyan-300/35 dark:bg-slate-950/75 dark:shadow-[0_4px_0_#164e75]">
-                <Button
-                  className="h-9 w-9 rounded-xl px-0 shadow-[0_3px_0_rgb(var(--border))]"
-                  type="button"
-                  variant="secondary"
-                  aria-label={t('dashboard.previousMonth')}
-                  onClick={() =>
-                    setPeriod((current) => shiftPeriod(current, -1))
+        <div className="relative min-h-[300px] overflow-hidden rounded-3xl border-2 border-[#35b9ff] bg-[#e2f6ff] p-4 shadow-[0_8px_0_#1688c7] dark:border-cyan-300/35 dark:bg-[#08152b] dark:shadow-[0_8px_0_#164e75] sm:p-5">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_8%,rgba(255,212,90,0.40),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(183,125,255,0.36),transparent_32%),linear-gradient(145deg,rgba(255,255,255,0.72),rgba(53,185,255,0.14))] dark:bg-[radial-gradient(circle_at_18%_8%,rgba(53,185,255,0.26),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(255,107,122,0.22),transparent_32%),linear-gradient(145deg,rgba(8,21,43,0.92),rgba(8,21,43,0.54))]" />
+          <div className="relative grid h-full min-h-[268px] content-between gap-3">
+            <div className="relative z-20 grid grid-cols-2 gap-2">
+              <PeriodPickerButton
+                label={t('dashboard.monthPicker')}
+                value={formatMonthLabel(period.month, language)}
+                clearLabel={t('dashboard.clearMonth')}
+                hasCustomValue={period.month !== currentPeriod.month}
+                onClear={() =>
+                  setPeriod((current) => ({
+                    ...current,
+                    month: currentPeriod.month,
+                  }))
+                }
+              >
+                <div className="grid max-h-72 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                  {Array.from({ length: 12 }, (_, index) => index + 1).map(
+                    (month) => (
+                      <Button
+                        key={month}
+                        className="h-9 min-w-36 justify-start whitespace-nowrap px-3 text-[11px] normal-case tracking-normal"
+                        type="button"
+                        variant={period.month === month ? 'primary' : 'ghost'}
+                        onClick={() =>
+                          setPeriod((current) => ({
+                            ...current,
+                            month,
+                          }))
+                        }
+                      >
+                        {formatMonthLabel(month, language)}
+                      </Button>
+                    ),
+                  )}
+                </div>
+              </PeriodPickerButton>
+              <PeriodPickerButton
+                label={t('dashboard.yearPicker')}
+                value={String(period.year)}
+                clearLabel={t('dashboard.clearYear')}
+                hasCustomValue={period.year !== currentPeriod.year}
+                onClear={() =>
+                  setPeriod((current) => ({
+                    ...current,
+                    year: currentPeriod.year,
+                  }))
+                }
+              >
+                <YearPickerOptions
+                  selectedYear={period.year}
+                  onSelect={(year) =>
+                    setPeriod((current) => ({
+                      ...current,
+                      year,
+                    }))
                   }
-                >
-                  <ChevronLeft size={16} />
-                </Button>
-                <span className="inline-flex min-w-[156px] items-center justify-center px-2 text-sm font-extrabold text-slate-950 dark:text-white">
-                  {formatPeriodLabel(period, language)}
-                </span>
-                <Button
-                  className="h-9 w-9 rounded-xl px-0 shadow-[0_3px_0_rgb(var(--border))]"
-                  type="button"
-                  variant="secondary"
-                  aria-label={t('dashboard.nextMonth')}
-                  onClick={() =>
-                    setPeriod((current) => shiftPeriod(current, 1))
-                  }
-                >
-                  <ChevronRight size={16} />
-                </Button>
-              </div>
+                />
+              </PeriodPickerButton>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border-2 border-[#35b9ff] bg-white/88 p-4 text-slate-950 shadow-[0_7px_0_#35b9ff] backdrop-blur-md dark:border-cyan-300/35 dark:bg-slate-950/78 dark:text-white dark:shadow-[0_7px_0_#164e75] lg:pl-16">
-              <div className="relative max-w-[240px]">
+            <div className="relative z-20 overflow-hidden rounded-2xl border-2 border-[#35b9ff] bg-white/90 p-4 text-slate-950 shadow-[0_7px_0_#35b9ff] backdrop-blur-md dark:border-cyan-300/35 dark:bg-slate-950/82 dark:text-white dark:shadow-[0_7px_0_#164e75]">
+              <div className="relative">
                 <p className="text-xs font-extrabold uppercase text-[#1688c7] dark:text-cyan-200">
                   {t('dashboard.progressTitle')}
                 </p>
@@ -275,7 +395,7 @@ export function DashboardPage() {
               : '...'
           }
           description={t('dashboard.metric.plannedDescription')}
-          icon={CircleDollarSign}
+          icon={ClipboardList}
           tone={visualTones[1]}
         />
         <MetricCard
@@ -288,7 +408,7 @@ export function DashboardPage() {
           description={t('dashboard.metric.paidDescription', {
             count: summary?.counts.paid ?? 0,
           })}
-          icon={ArrowUpRight}
+          icon={Check}
           tone={visualTones[0]}
         />
         <MetricCard
@@ -305,7 +425,7 @@ export function DashboardPage() {
           description={t('dashboard.metric.remainingDescription', {
             count: summary?.counts.unpaid ?? 0,
           })}
-          icon={ArrowDownRight}
+          icon={Clock3}
           tone={visualTones[3]}
         />
       </section>
@@ -405,20 +525,22 @@ function MetricCard({
 }: MetricCardProps) {
   return (
     <Card className={`overflow-hidden ${tone.soft} ${tone.border}`}>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0">
-        <div>
-          <CardDescription>{title}</CardDescription>
-          <CardTitle className="mt-2 text-2xl">{value}</CardTitle>
+      <CardHeader className="flex flex-row items-center gap-3 space-y-0 p-4">
+        <div
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tone.bg}`}
+        >
+          <Icon size={18} />
         </div>
-        <div className={`grid h-11 w-11 place-items-center rounded-md ${tone.bg}`}>
-          <Icon size={19} />
+        <div className="min-w-0 flex-1">
+          <CardDescription className="text-xs">{title}</CardDescription>
+          <CardTitle className="mt-1 truncate text-xl leading-tight">
+            {value}
+          </CardTitle>
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-[rgb(var(--muted-foreground))]">
+            {description}
+          </p>
         </div>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-[rgb(var(--muted-foreground))]">
-          {description}
-        </p>
-      </CardContent>
     </Card>
   )
 }
@@ -433,7 +555,7 @@ function ExpenseLine({
   isActionPending,
   onAction,
 }: {
-  expense: Expense
+  expense: ExpenseSummary
   amount: string
   meta: string
   actionLabel?: string

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /expenses
+Disallow: /calendar
+Disallow: /settings
+Disallow: /auth
+
+Sitemap: https://levko.bg/sitemap.xml

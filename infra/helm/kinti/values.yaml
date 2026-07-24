@@ -12,6 +12,7 @@ api:
     PORT: "3000"
     SUPABASE_URL: ""
     SUPABASE_JWT_ISSUER: ""
+    WEB_ORIGIN: ""
   secrets:
     DATABASE_URL: ""
     DIRECT_URL: ""
@@ -31,6 +32,12 @@ api:
       path: /health
       initialDelaySeconds: 10
       periodSeconds: 20
+  deployment:
+    revisionHistoryLimit: 3
+    minReadySeconds: 5
+    strategy:
+      maxSurge: 1
+      maxUnavailable: 0
 
 web:
   name: kinti-web
@@ -62,6 +69,12 @@ web:
       path: /
       initialDelaySeconds: 10
       periodSeconds: 20
+  deployment:
+    revisionHistoryLimit: 3
+    minReadySeconds: 5
+    strategy:
+      maxSurge: 1
+      maxUnavailable: 0
 
 ingress:
   name: kinti-ingress

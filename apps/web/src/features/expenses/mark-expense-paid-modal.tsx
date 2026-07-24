@@ -11,7 +11,14 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { useI18n } from '@/i18n/i18n-context'
 import { apiRequest } from '@/lib/api'
-import type { Expense } from '@/lib/types'
+import {
+  formatDateValue,
+  getExpenseDueDateInPeriod,
+  parseDateValue,
+} from '@/lib/expense-schedule'
+import { markExpensePaidInCache } from '@/lib/query-cache-updates'
+import { queryKeys } from '@/lib/query-keys'
+import type { ExpenseSummary } from '@/lib/types'
 
 const amountRegex = /^\d{1,8}(\.\d{1,2})?$/
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/
@@ -22,7 +29,7 @@ type PaymentFormValues = {
 }
 
 type MarkExpensePaidModalProps = {
-  expense: Expense | null
+  expense: ExpenseSummary | null
   period: { month: number; year: number }
   onClose: () => void
   onSuccess?: () => Promise<void> | void
@@ -70,16 +77,69 @@ export function MarkExpensePaidModal({
         },
       })
     },
-    onSuccess: async () => {
+    onMutate: async (values) => {
+      if (!expense) {
+        return
+      }
+
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ['dashboard-summary', period.year, period.month],
+        queryClient.cancelQueries({
+          queryKey: queryKeys.expense(expense.id),
         }),
-        queryClient.invalidateQueries({
-          queryKey: ['payments', period.year, period.month],
+        queryClient.cancelQueries({
+          queryKey: queryKeys.dashboardSummary(period),
         }),
-        queryClient.invalidateQueries({ queryKey: ['expenses'] }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.payments(period),
+        }),
       ])
+
+      markExpensePaidInCache(queryClient, {
+        expense,
+        period,
+        amountSnapshot: values.amountSnapshot,
+        paidAt: values.paidAt,
+      })
+    },
+    onError: async () => {
+      const invalidations = [
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboardSummary(period),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.payments(period),
+        }),
+      ]
+
+      if (expense) {
+        invalidations.push(
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.expense(expense.id),
+          }),
+        )
+      }
+
+      await Promise.all(invalidations)
+    },
+    onSuccess: async () => {
+      const invalidations = [
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboardSummary(period),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.payments(period),
+        }),
+      ]
+
+      if (expense) {
+        invalidations.push(
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.expense(expense.id),
+          }),
+        )
+      }
+
+      await Promise.all(invalidations)
       await onSuccess?.()
       onClose()
     },
@@ -174,39 +234,10 @@ export function MarkExpensePaidModal({
 }
 
 function getDefaultPaymentDate(
-  expense: Expense,
+  expense: ExpenseSummary,
   period: { month: number; year: number },
 ) {
-  const dueDate = parseDateValue(expense.dueDate)
-
-  if (expense.billingPeriod === 'monthly') {
-    const day = Math.min(
-      dueDate.getDate(),
-      new Date(period.year, period.month, 0).getDate(),
-    )
-
-    return formatDateValue(new Date(period.year, period.month - 1, day))
-  }
-
-  if (expense.billingPeriod === 'yearly') {
-    return formatDateValue(
-      new Date(period.year, dueDate.getMonth(), dueDate.getDate()),
-    )
-  }
-
-  return formatDateValue(dueDate)
-}
-
-function parseDateValue(value: string) {
-  const [year, month, day] = value.slice(0, 10).split('-').map(Number)
-
-  return new Date(year, month - 1, day)
-}
-
-function formatDateValue(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
+  return formatDateValue(
+    getExpenseDueDateInPeriod(expense, period) ?? parseDateValue(expense.dueDate),
+  )
 }

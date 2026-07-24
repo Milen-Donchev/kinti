@@ -19,6 +19,17 @@ export type Expense = {
   updatedAt: string
 }
 
+export type ExpenseSummary = Pick<
+  Expense,
+  | 'id'
+  | 'name'
+  | 'defaultAmount'
+  | 'billingPeriod'
+  | 'dueDate'
+  | 'type'
+  | 'icon'
+>
+
 export type ExpensePayment = {
   id: string
   expenseId: string
@@ -50,7 +61,7 @@ export type DashboardSummary = {
     unpaid: number
   }
   paidExpenses: Array<{
-    expense: Expense
+    expense: ExpenseSummary
     payment: {
       id: string
       amountSnapshot: string
@@ -59,7 +70,7 @@ export type DashboardSummary = {
     amount: string
   }>
   unpaidExpenses: Array<{
-    expense: Expense
+    expense: ExpenseSummary
     expectedAmount: string
   }>
 }

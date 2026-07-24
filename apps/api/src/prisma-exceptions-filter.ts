@@ -8,14 +8,18 @@ import {
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
 
+import type { RequestWithId } from './observability/request-id.middleware';
+
 type ClientErrorBody = {
   message: string;
   error: string;
   statusCode: number;
   code: string;
+  requestId?: string;
 };
 
 type PrismaErrorLogContext = {
+  requestId?: string;
   errorName: string;
   method?: string;
   path?: string;
@@ -43,11 +47,13 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 
   catch(exception: Error, host: ArgumentsHost) {
     const http = host.switchToHttp();
-    const request = http.getRequest<Request>();
+    const request = http.getRequest<RequestWithId>();
     const response = http.getResponse<Response>();
     const clientError = this.getClientError(exception);
+    clientError.requestId = request.requestId;
 
     this.logPrismaError(exception, {
+      requestId: request.requestId,
       method: request.method,
       path: request.originalUrl || request.url,
     });
@@ -112,7 +118,10 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 
   private logPrismaError(
     exception: Error,
-    requestContext: Pick<PrismaErrorLogContext, 'method' | 'path'>,
+    requestContext: Pick<
+      PrismaErrorLogContext,
+      'method' | 'path' | 'requestId'
+    >,
   ) {
     const context: PrismaErrorLogContext = {
       ...requestContext,

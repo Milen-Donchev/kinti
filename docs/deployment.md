@@ -192,12 +192,140 @@ kinti -n kinti-prod rollout status deployment/kinti-web --timeout=180s
 ## Smoke Tests
 
 ```bash
-curl -i http://46.101.230.169.sslip.io/
-curl -i http://46.101.230.169.sslip.io/api/health
-curl -i http://46.101.230.169.sslip.io/api/health/db
+curl -i https://levko.bg/
+curl -i https://levko.bg/api/health
+curl -i https://levko.bg/api/health/db
 ```
 
 For authenticated endpoints, test through the web app or with a valid Supabase access token.
+
+## Production Hardening
+
+### HTTPS and Domain
+
+Production traffic should use the real domain:
+
+```text
+https://levko.bg
+```
+
+The production Helm values configure:
+
+- `ingress.hosts`: `levko.bg` and `www.levko.bg`
+- `ingress.tls.enabled`: `true`
+- `ingress.tls.secretName`: `levko-bg-tls`
+- `ingress.tls.clusterIssuer`: `letsencrypt-prod`
+- `api.config.WEB_ORIGIN`: `https://levko.bg`
+- `web.config.VITE_API_URL`: `https://levko.bg/api`
+
+Avoid testing production through the old `sslip.io` URL unless you are debugging DNS or ingress directly.
+
+### Basic Monitoring and Logging
+
+For the current budget-conscious setup, use Kubernetes and DigitalOcean's built-in visibility before adding paid observability tools.
+
+Quick health checks:
+
+```bash
+curl -fsS https://levko.bg/api/health
+curl -fsS https://levko.bg/api/health/db
+```
+
+Current pods:
+
+```bash
+kinti -n kinti-prod get pods -o wide
+```
+
+Recent pod events:
+
+```bash
+kinti -n kinti-prod get events --sort-by=.lastTimestamp
+```
+
+API logs:
+
+```bash
+kinti -n kinti-prod logs deployment/kinti-api --tail=200
+```
+
+Web logs:
+
+```bash
+kinti -n kinti-prod logs deployment/kinti-web --tail=200
+```
+
+Follow logs while testing:
+
+```bash
+kinti -n kinti-prod logs deployment/kinti-api -f --tail=80
+```
+
+Resource usage:
+
+```bash
+kinti -n kinti-prod top pods
+kinti top nodes
+```
+
+If `top` does not work, install or enable `metrics-server` in the cluster before relying on these commands.
+
+Recommended lightweight external monitor:
+
+- Add an uptime check for `https://levko.bg/api/health`.
+- Add another check for `https://levko.bg/`.
+- Keep alerting simple at first: email notification is enough.
+
+Do not add Prometheus, Grafana, Loki, or paid log drains yet unless we need historical metrics, alert routing, or deeper debugging.
+
+### Resource Limits
+
+Current default resource profile:
+
+- API requests: `100m` CPU, `128Mi` memory
+- API limits: `500m` CPU, `512Mi` memory
+- Web requests: `50m` CPU, `64Mi` memory
+- Web limits: `250m` CPU, `256Mi` memory
+
+This is reasonable for the current small app and single Droplet. Review it if:
+
+- pods restart with `OOMKilled`;
+- CPU throttling appears during normal use;
+- API response time gets noticeably worse;
+- the database is healthy but requests still feel slow.
+
+Useful checks:
+
+```bash
+kinti -n kinti-prod describe pod <pod-name>
+kinti -n kinti-prod top pods
+```
+
+The Helm chart uses rolling updates with:
+
+- `maxUnavailable: 0`
+- `maxSurge: 1`
+- `revisionHistoryLimit: 3`
+
+This keeps deploys safer while avoiding unnecessary rollout history.
+
+### Supabase Backup Awareness
+
+Supabase daily backups are available on paid plans. According to the official Supabase backup docs, Pro projects currently get 7 days of daily backups, Team projects get 14 days, and Enterprise projects can get up to 30 days. Free projects should be backed up manually with CLI/database dumps and kept outside Supabase.
+
+For Levko right now:
+
+- Do not enable PITR yet. It is powerful, but it is not budget-friendly for this stage.
+- If the production Supabase project is on Free, create manual logical backups regularly.
+- If real users start relying on the app, upgrade the production Supabase organization to Pro before the data becomes painful to lose.
+
+Manual backup command pattern:
+
+```bash
+supabase db dump --db-url "$DIRECT_URL" -f "backups/levko-prod-$(date +%Y-%m-%d).sql"
+```
+
+Keep production backups out of git. Store them somewhere private and separate from the server.
 
 ## Useful Production Checks
 

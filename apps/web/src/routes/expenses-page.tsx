@@ -39,6 +39,11 @@ import { useI18n } from '@/i18n/i18n-context'
 import type { TranslationKey } from '@/i18n/dictionaries'
 import { apiRequest } from '@/lib/api'
 import { cn } from '@/lib/cn'
+import {
+  removeExpenseFromListCache,
+  updateExpenseInCache,
+} from '@/lib/query-cache-updates'
+import { queryKeys } from '@/lib/query-keys'
 import type { BillingPeriod, Currency, Expense, ExpenseType } from '@/lib/types'
 import {
   getBillingPeriodTone,
@@ -91,7 +96,7 @@ export function ExpensesPage() {
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null)
   const [expenseToArchive, setExpenseToArchive] = useState<Expense | null>(null)
   const expensesQuery = useQuery({
-    queryKey: ['expenses'],
+    queryKey: queryKeys.expenses(),
     queryFn: () => apiRequest<Expense[]>('/expenses'),
   })
   const filteredExpenses = useMemo(() => {
@@ -460,10 +465,14 @@ function EditExpenseModal({
         },
       })
     },
-    onSuccess: async () => {
+    onSuccess: async (updatedExpense) => {
+      updateExpenseInCache(queryClient, updatedExpense)
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['expenses'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.expenses() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.expensesDueAll() }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboardSummaries(),
+        }),
       ])
       onClose()
     },
@@ -674,9 +683,15 @@ function ArchiveExpenseModal({
       })
     },
     onSuccess: async () => {
+      if (expense) {
+        removeExpenseFromListCache(queryClient, expense.id)
+      }
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['expenses'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.expenses() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.expensesDueAll() }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboardSummaries(),
+        }),
       ])
       onClose()
     },

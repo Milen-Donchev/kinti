@@ -20,7 +20,13 @@ import { getExpenseIcon } from '@/features/expenses/expense-options'
 import { MarkExpensePaidModal } from '@/features/expenses/mark-expense-paid-modal'
 import { useI18n } from '@/i18n/i18n-context'
 import { apiRequest } from '@/lib/api'
-import type { Currency, Expense, ExpensePayment } from '@/lib/types'
+import {
+  getExpenseDueDateInPeriod,
+  parseDateValue,
+} from '@/lib/expense-schedule'
+import { undoPaymentInCache } from '@/lib/query-cache-updates'
+import { queryKeys } from '@/lib/query-keys'
+import type { Currency, ExpensePayment, ExpenseSummary } from '@/lib/types'
 import { getIconTone } from '@/lib/visuals'
 
 const currencyCodes: Record<Currency, string> = {
@@ -79,30 +85,26 @@ function formatSelectedDate(
   }).format(new Date(period.year, period.month - 1, day))
 }
 
-function parseDateValue(value: string) {
-  const [year, month, day] = value.slice(0, 10).split('-').map(Number)
-
-  return new Date(year, month - 1, day)
-}
-
 export function CalendarPage() {
   const { language, t } = useI18n()
   const { appearance } = useAppearance()
   const queryClient = useQueryClient()
   const [period, setPeriod] = useState(getCurrentPeriod)
   const [selectedDay, setSelectedDay] = useState(() => new Date().getDate())
-  const [expenseToMarkPaid, setExpenseToMarkPaid] = useState<Expense | null>(
-    null,
-  )
+  const [expenseToMarkPaid, setExpenseToMarkPaid] =
+    useState<ExpenseSummary | null>(null)
   const currentPeriod = getCurrentPeriod()
   const isCurrentPeriod =
     period.month === currentPeriod.month && period.year === currentPeriod.year
   const expensesQuery = useQuery({
-    queryKey: ['expenses'],
-    queryFn: () => apiRequest<Expense[]>('/expenses'),
+    queryKey: queryKeys.expensesDue(period),
+    queryFn: () =>
+      apiRequest<ExpenseSummary[]>(
+        `/expenses/due?periodMonth=${period.month}&periodYear=${period.year}`,
+      ),
   })
   const paymentsQuery = useQuery({
-    queryKey: ['payments', period.year, period.month],
+    queryKey: queryKeys.payments(period),
     queryFn: () =>
       apiRequest<ExpensePayment[]>(
         `/payments?periodMonth=${period.month}&periodYear=${period.year}`,
@@ -131,13 +133,24 @@ export function CalendarPage() {
           method: 'DELETE',
         },
       ),
-    onSuccess: async () => {
+    onMutate: async (expenseId) => {
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.dashboardSummary(period),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.payments(period),
+        }),
+      ])
+      undoPaymentInCache(queryClient, period, expenseId)
+    },
+    onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ['dashboard-summary', period.year, period.month],
+          queryKey: queryKeys.dashboardSummary(period),
         }),
         queryClient.invalidateQueries({
-          queryKey: ['payments', period.year, period.month],
+          queryKey: queryKeys.payments(period),
         }),
       ])
     },
@@ -394,17 +407,17 @@ type CalendarDay =
       key: string
       isPlaceholder: true
       dayOfMonth?: never
-      expenses: Expense[]
+      expenses: ExpenseSummary[]
     }
   | {
       key: string
       isPlaceholder: false
       dayOfMonth: number
-      expenses: Expense[]
+      expenses: ExpenseSummary[]
     }
 
 function buildCalendarDays(
-  expenses: Expense[],
+  expenses: ExpenseSummary[],
   period: { month: number; year: number },
 ) {
   const daysInMonth = new Date(period.year, period.month, 0).getDate()
@@ -434,35 +447,13 @@ function buildCalendarDays(
 }
 
 function isExpenseDueOnDay(
-  expense: Expense,
+  expense: ExpenseSummary,
   day: number,
   period: { month: number; year: number },
 ) {
-  const dueDate = parseDateValue(expense.dueDate)
-  const periodEnd = new Date(period.year, period.month, 0)
+  const scheduledDate = getExpenseDueDateInPeriod(expense, period)
 
-  if (dueDate > periodEnd) {
-    return false
-  }
-
-  if (expense.billingPeriod === 'monthly') {
-    const dueDay = Math.min(
-      dueDate.getDate(),
-      new Date(period.year, period.month, 0).getDate(),
-    )
-
-    return dueDay === day
-  }
-
-  if (expense.billingPeriod === 'yearly') {
-    return dueDate.getMonth() + 1 === period.month && dueDate.getDate() === day
-  }
-
-  return (
-    dueDate.getFullYear() === period.year &&
-    dueDate.getMonth() + 1 === period.month &&
-    dueDate.getDate() === day
-  )
+  return scheduledDate?.getDate() === day
 }
 
 function getWeekdayLabels(language: string) {
@@ -487,7 +478,7 @@ function CalendarExpenseLine({
   onMarkPaid,
   onUndo,
 }: {
-  expense: Expense
+  expense: ExpenseSummary
   payment?: ExpensePayment
   amount: string
   meta: string
@@ -566,7 +557,7 @@ function formatShortDate(value: string, language: string) {
 }
 
 function translateBillingPeriod(
-  period: Expense['billingPeriod'],
+  period: ExpenseSummary['billingPeriod'],
   t: ReturnType<typeof useI18n>['t'],
 ) {
   if (period === 'monthly') {

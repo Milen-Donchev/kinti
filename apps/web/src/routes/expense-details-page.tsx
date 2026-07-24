@@ -26,6 +26,12 @@ import { getExpenseIcon } from '@/features/expenses/expense-options'
 import { MarkExpensePaidModal } from '@/features/expenses/mark-expense-paid-modal'
 import { useI18n } from '@/i18n/i18n-context'
 import { apiRequest } from '@/lib/api'
+import {
+  isExpenseDueInPeriod,
+  parseDateValue,
+} from '@/lib/expense-schedule'
+import { undoPaymentInCache } from '@/lib/query-cache-updates'
+import { queryKeys } from '@/lib/query-keys'
 import type { Currency, Expense, ExpenseDetails, ExpensePayment } from '@/lib/types'
 import { getBillingPeriodTone, getIconTone, getImportanceTone } from '@/lib/visuals'
 
@@ -67,12 +73,6 @@ function formatPeriodLabel(
   }).format(new Date(period.year, period.month - 1, 1))
 }
 
-function parseDateValue(value: string) {
-  const [year, month, day] = value.slice(0, 10).split('-').map(Number)
-
-  return new Date(year, month - 1, day)
-}
-
 export function ExpenseDetailsPage() {
   const { expenseId } = useParams()
   const { language, t } = useI18n()
@@ -83,7 +83,7 @@ export function ExpenseDetailsPage() {
   )
   const currentPeriod = getCurrentPeriod()
   const expenseQuery = useQuery({
-    queryKey: ['expense', expenseId],
+    queryKey: queryKeys.expense(expenseId ?? ''),
     enabled: Boolean(expenseId),
     queryFn: () => apiRequest<ExpenseDetails>(`/expenses/${expenseId}`),
   })
@@ -117,11 +117,33 @@ export function ExpenseDetailsPage() {
         },
       )
     },
-    onSuccess: async () => {
+    onMutate: async () => {
+      if (!expense) {
+        return
+      }
+
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['expense', expenseId] }),
-        queryClient.invalidateQueries({ queryKey: ['payments'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] }),
+        queryClient.cancelQueries({ queryKey: queryKeys.expense(expense.id) }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.payments(currentPeriod),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.dashboardSummary(currentPeriod),
+        }),
+      ])
+      undoPaymentInCache(queryClient, currentPeriod, expense.id)
+    },
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.expense(expenseId ?? ''),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.payments(currentPeriod),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboardSummary(currentPeriod),
+        }),
       ])
     },
   })
@@ -180,6 +202,7 @@ export function ExpenseDetailsPage() {
   const iconTone = getIconTone(expense.icon)
   const periodTone = getBillingPeriodTone(expense.billingPeriod)
   const importanceTone = getImportanceTone(expense.importance)
+  const isDueInCurrentPeriod = isExpenseDueInPeriod(expense, currentPeriod)
 
   return (
     <div className="grid gap-5">
@@ -198,7 +221,7 @@ export function ExpenseDetailsPage() {
             <div
               className={`grid h-14 w-14 shrink-0 place-items-center rounded-2xl ${iconTone.bg}`}
             >
-                <Icon size={24} />
+              <Icon size={24} />
             </div>
             <div className="min-w-0">
               <Badge className={`border-2 ${periodTone.border} ${periodTone.soft}`}>
@@ -241,12 +264,12 @@ export function ExpenseDetailsPage() {
                 )}
                 {t('dashboard.undoPayment')}
               </Button>
-            ) : (
+            ) : isDueInCurrentPeriod ? (
               <Button type="button" onClick={() => setExpenseToMarkPaid(expense)}>
                 <Check size={17} />
                 {t('dashboard.markPaid')}
               </Button>
-            )}
+            ) : null}
           </div>
         </div>
       </section>
@@ -273,6 +296,8 @@ export function ExpenseDetailsPage() {
         className={
           currentPayment
             ? 'border-[#29c776] bg-[#ddfbea] dark:bg-[#153a2b]'
+            : !isDueInCurrentPeriod
+              ? 'border-[#35b9ff] bg-[#e2f6ff] dark:bg-[#15334a]'
             : 'border-[#ffd45a] bg-[#fff4ce] dark:bg-[#493919]'
         }
       >
@@ -282,6 +307,8 @@ export function ExpenseDetailsPage() {
               className={
                 currentPayment
                   ? 'grid h-12 w-12 place-items-center rounded-2xl bg-[#29c776] text-white shadow-[0_4px_0_#16a063]'
+                  : !isDueInCurrentPeriod
+                    ? 'grid h-12 w-12 place-items-center rounded-2xl bg-[#35b9ff] text-white shadow-[0_4px_0_#1688c7]'
                   : 'grid h-12 w-12 place-items-center rounded-2xl bg-[#ffd45a] text-slate-950 shadow-[0_4px_0_#d39d24]'
               }
             >
@@ -291,12 +318,18 @@ export function ExpenseDetailsPage() {
               <p className="text-sm font-extrabold">
                 {currentPayment
                   ? t('expenseDetails.currentPeriodPaid')
-                  : t('expenseDetails.currentPeriodOpen')}
+                  : isDueInCurrentPeriod
+                    ? t('expenseDetails.currentPeriodOpen')
+                    : t('expenseDetails.currentPeriodNotDue')}
               </p>
               <p className="mt-1 text-xs leading-5 text-[rgb(var(--muted-foreground))]">
-                {t('expenseDetails.currentPeriodDescription', {
-                  period: formatPeriodLabel(currentPeriod, language),
-                })}
+                {currentPayment || isDueInCurrentPeriod
+                  ? t('expenseDetails.currentPeriodDescription', {
+                      period: formatPeriodLabel(currentPeriod, language),
+                    })
+                  : t('expenseDetails.currentPeriodNotDueDescription', {
+                      period: formatPeriodLabel(currentPeriod, language),
+                    })}
               </p>
             </div>
           </div>
@@ -308,12 +341,12 @@ export function ExpenseDetailsPage() {
                 appearance.currency,
               )}
             </p>
-          ) : (
+          ) : isDueInCurrentPeriod ? (
             <Button type="button" onClick={() => setExpenseToMarkPaid(expense)}>
               <Check size={17} />
               {t('dashboard.markPaid')}
             </Button>
-          )}
+          ) : null}
         </CardContent>
       </Card>
 
@@ -356,7 +389,9 @@ export function ExpenseDetailsPage() {
         period={currentPeriod}
         onClose={() => setExpenseToMarkPaid(null)}
         onSuccess={() =>
-          queryClient.invalidateQueries({ queryKey: ['expense', expenseId] })
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.expense(expenseId ?? ''),
+          })
         }
       />
     </div>

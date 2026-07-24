@@ -6,12 +6,14 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { ExpensePeriodQueryDto } from './dto/expense-period-query.dto';
 
 import type { AuthUser } from '../auth/types';
 import { AuthGuard } from '../auth/auth.guard';
@@ -25,6 +27,14 @@ export class ExpensesController {
   @Get()
   async getAllExpenses(@CurrentUser() user: AuthUser) {
     return this.expensesService.fetchAllExpenses(user.id);
+  }
+
+  @Get('due')
+  async getDueExpenses(
+    @CurrentUser() user: AuthUser,
+    @Query() query: ExpensePeriodQueryDto,
+  ) {
+    return this.expensesService.fetchDueExpenses(user.id, query);
   }
 
   @Post()

@@ -13,7 +13,6 @@ import type { AuthUser } from '../auth/types';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
-import { ExpensePaymentsGuard } from './expense-payments.guard';
 import { ExpensePaymentsService } from './expense-payments.service';
 import { CreateExpensePaymentDto } from './dto/create-expense-payment.dto';
 import { ExpensePaymentParamsDto } from './dto/expense-payment-params.dto';
@@ -38,7 +37,6 @@ export class ExpensePaymentsController {
   }
 
   @Post('/expenses/:id')
-  @UseGuards(ExpensePaymentsGuard)
   async createExpensePayment(
     @CurrentUser() user: AuthUser,
     @Param('id') expenseId: string,
@@ -52,7 +50,6 @@ export class ExpensePaymentsController {
   }
 
   @Delete('expenses/:id')
-  @UseGuards(ExpensePaymentsGuard)
   async removeExpensePayment(
     @CurrentUser() user: AuthUser,
     @Query() { periodMonth, periodYear }: ExpensePaymentParamsDto,
@@ -67,7 +64,6 @@ export class ExpensePaymentsController {
   }
 
   @Get('expenses/:id')
-  @UseGuards(ExpensePaymentsGuard)
   async getExpensePaymentsByPeriod(
     @CurrentUser() user: AuthUser,
     @Query() { periodMonth, periodYear }: ExpensePaymentParamsDto,

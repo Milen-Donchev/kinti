@@ -6,7 +6,19 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
+import { ExpensePeriodQueryDto } from './dto/expense-period-query.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { getPeriodEnd, isExpenseDueInPeriod } from './expense-schedule.util';
+
+const expenseSummarySelect = {
+  id: true,
+  name: true,
+  defaultAmount: true,
+  billingPeriod: true,
+  dueDate: true,
+  type: true,
+  icon: true,
+};
 
 function parseDateOnly(date: string) {
   const [year, month, day] = date.split('-').map(Number);
@@ -33,6 +45,28 @@ export class ExpensesService {
       where: { userId, isActive: true },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async fetchDueExpenses(userId: string, query: ExpensePeriodQueryDto) {
+    const period = {
+      periodMonth: query.periodMonth,
+      periodYear: query.periodYear,
+    };
+    const expenses = await this.prisma.expense.findMany({
+      where: {
+        userId,
+        isActive: true,
+        dueDate: {
+          lte: getPeriodEnd(period),
+        },
+      },
+      select: expenseSummarySelect,
+      orderBy: {
+        dueDate: 'asc',
+      },
+    });
+
+    return expenses.filter((expense) => isExpenseDueInPeriod(expense, period));
   }
 
   async setExpense(userId: string, reqBody: CreateExpenseDto) {
@@ -79,7 +113,6 @@ export class ExpensesService {
         type: reqBody.type,
         icon: reqBody.icon,
         description: reqBody.description,
-        isActive: reqBody.isActive,
       },
       where: { userId, id: expenseId },
     });

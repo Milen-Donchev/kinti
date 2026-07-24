@@ -2,18 +2,19 @@ api:
   replicaCount: 2
   image:
     repository: ghcr.io/milen-donchev/kinti-api
-    tag: latest
+    tag: ""
     pullPolicy: IfNotPresent
   config:
     NODE_ENV: production
     SUPABASE_URL: https://auzgqefookfzxmbejpjx.supabase.co
     SUPABASE_JWT_ISSUER: https://auzgqefookfzxmbejpjx.supabase.co/auth/v1
+    WEB_ORIGIN: https://levko.bg
 
 web:
   replicaCount: 2
   image:
     repository: ghcr.io/milen-donchev/kinti-web
-    tag: latest
+    tag: ""
     pullPolicy: IfNotPresent
   config:
     VITE_API_URL: https://levko.bg/api

@@ -21,6 +21,8 @@ import { useI18n } from '@/i18n/i18n-context'
 import type { TranslationKey } from '@/i18n/dictionaries'
 import { apiRequest } from '@/lib/api'
 import { cn } from '@/lib/cn'
+import { addExpenseToCache } from '@/lib/query-cache-updates'
+import { queryKeys } from '@/lib/query-keys'
 import type { BillingPeriod, Expense, ExpenseType, Importance } from '@/lib/types'
 import { getIconTone } from '@/lib/visuals'
 
@@ -89,10 +91,14 @@ export function AddExpenseModal({ isOpen, onClose }: AddExpenseModalProps) {
           description: values.description || undefined,
         },
       }),
-    onSuccess: async () => {
+    onSuccess: async (expense) => {
+      addExpenseToCache(queryClient, expense)
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['expenses'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.expenses() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.expensesDueAll() }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboardSummaries(),
+        }),
       ])
       form.reset(defaultValues)
       onClose()

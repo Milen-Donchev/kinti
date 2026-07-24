@@ -7,18 +7,26 @@ import {
   Settings,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { BrandLogo } from '@/components/brand/brand-logo'
+import { prefetchRoute } from '@/app/route-prefetch'
 import { useAuth } from '@/features/auth/auth-context'
-import { AddExpenseModal } from '@/features/expenses/add-expense-modal'
 import { useI18n } from '@/i18n/i18n-context'
 import type { TranslationKey } from '@/i18n/dictionaries'
 import { apiRequest } from '@/lib/api'
 import { cn } from '@/lib/cn'
+import { queryKeys } from '@/lib/query-keys'
 import type { Expense } from '@/lib/types'
+import { usePageMeta } from '@/lib/use-page-meta'
+
+const AddExpenseModal = lazy(() =>
+  import('@/features/expenses/add-expense-modal').then((module) => ({
+    default: module.AddExpenseModal,
+  })),
+)
 
 const navigationItems: Array<{
   label: TranslationKey
@@ -59,9 +67,15 @@ export function AppShell() {
   const { user, signOut } = useAuth()
   const { language, t } = useI18n()
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false)
+  usePageMeta({
+    title: t('seo.appTitle'),
+    description: t('seo.appDescription'),
+    robots: 'noindex, nofollow',
+  })
   const expensesQuery = useQuery({
-    queryKey: ['expenses'],
+    queryKey: queryKeys.expenses(),
     queryFn: () => apiRequest<Expense[]>('/expenses'),
+    staleTime: 60_000,
   })
   const today = new Date()
   const todayExpensesCount =
@@ -120,6 +134,8 @@ export function AppShell() {
                       'border-[#29c776] bg-[#ddfbea] text-[#16a063] shadow-[0_4px_0_#29c776] dark:bg-[#153a2b] dark:text-[#36d887]',
                   )
                 }
+                onMouseEnter={() => prefetchRoute(item.to)}
+                onFocus={() => prefetchRoute(item.to)}
               >
                 <item.icon size={18} />
                 {t(item.label)}
@@ -130,6 +146,8 @@ export function AppShell() {
           <div className="mt-auto grid gap-3">
             <NavLink
               to="/settings"
+              onMouseEnter={() => prefetchRoute('/settings')}
+              onFocus={() => prefetchRoute('/settings')}
               className={({ isActive }) =>
                 cn(
                   'flex h-11 items-center gap-3 rounded-xl border-2 border-transparent px-3 text-sm font-extrabold text-[rgb(var(--muted-foreground))] transition-colors hover:border-[rgb(var(--border))] hover:bg-[rgb(var(--surface-subtle))] hover:text-[rgb(var(--foreground))]',
@@ -205,10 +223,14 @@ export function AppShell() {
 
         <div className="h-20 lg:hidden" />
       </div>
-      <AddExpenseModal
-        isOpen={isAddExpenseOpen}
-        onClose={() => setIsAddExpenseOpen(false)}
-      />
+      {isAddExpenseOpen ? (
+        <Suspense fallback={null}>
+          <AddExpenseModal
+            isOpen={isAddExpenseOpen}
+            onClose={() => setIsAddExpenseOpen(false)}
+          />
+        </Suspense>
+      ) : null}
     </div>
   )
 }

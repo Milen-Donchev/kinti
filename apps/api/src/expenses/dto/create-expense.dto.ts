@@ -53,6 +53,7 @@ export class CreateExpenseDto {
 
   @IsNotEmpty()
   @IsString()
+  @MaxLength(64)
   icon: string;
 
   @IsOptional()

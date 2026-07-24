@@ -5,6 +5,13 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.web.replicaCount }}
+  revisionHistoryLimit: {{ .Values.web.deployment.revisionHistoryLimit }}
+  minReadySeconds: {{ .Values.web.deployment.minReadySeconds }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.web.deployment.strategy.maxSurge }}
+      maxUnavailable: {{ .Values.web.deployment.strategy.maxUnavailable }}
   selector:
     matchLabels:
       app: {{ .Values.web.name }}
@@ -19,7 +26,7 @@ spec:
     {{- end }}
       containers:
         - name: web
-          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"
+          image: "{{ .Values.web.image.repository }}:{{ required "web.image.tag is required" .Values.web.image.tag }}"
           imagePullPolicy: {{ .Values.web.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.web.service.port }}

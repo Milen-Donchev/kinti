@@ -1,7 +1,12 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpensePaymentDto } from './dto/create-expense-payment.dto';
+import { isExpenseDueInPeriod } from '../expenses/expense-schedule.util';
 
 function parseDateOnly(date: string) {
   const [year, month, day] = date.split('-').map(Number);
@@ -28,6 +33,18 @@ export class ExpensePaymentsService {
     expenseId: string,
     reqBody: CreateExpensePaymentDto,
   ) {
+    const expense = await this.getPayableExpense(userId, expenseId);
+    const period = {
+      periodMonth: reqBody.periodMonth,
+      periodYear: reqBody.periodYear,
+    };
+
+    if (!isExpenseDueInPeriod(expense, period)) {
+      throw new BadRequestException(
+        'Expense is not due in the selected period',
+      );
+    }
+
     const paidAt = reqBody.paidAt ? parseDateOnly(reqBody.paidAt) : new Date();
 
     return await this.prisma.expensePayment.upsert({
@@ -61,6 +78,19 @@ export class ExpensePaymentsService {
     periodYear: number,
     expenseId: string,
   ) {
+    const expense = await this.getPayableExpense(userId, expenseId);
+
+    if (
+      !isExpenseDueInPeriod(expense, {
+        periodMonth,
+        periodYear,
+      })
+    ) {
+      throw new BadRequestException(
+        'Expense is not due in the selected period',
+      );
+    }
+
     return await this.prisma.expensePayment.delete({
       where: {
         expenseId_periodMonth_periodYear: {
@@ -116,5 +146,31 @@ export class ExpensePaymentsService {
         paidAt: 'desc',
       },
     });
+  }
+
+  private async getPayableExpense(userId: string, expenseId: string) {
+    const expense = await this.prisma.expense.findUnique({
+      where: {
+        id: expenseId,
+        userId,
+      },
+      select: {
+        billingPeriod: true,
+        dueDate: true,
+        isActive: true,
+      },
+    });
+
+    if (!expense) {
+      throw new NotFoundException('Expense not found');
+    }
+
+    if (!expense.isActive) {
+      throw new BadRequestException(
+        'Modifying inactive expenses is not allowed',
+      );
+    }
+
+    return expense;
   }
 }

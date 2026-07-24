@@ -52,6 +52,8 @@ model Expense {
   payments ExpensePayment[]
 
   @@index([userId])
+  @@index([userId, isActive, dueDate], map: "expenses_user_id_is_active_due_date_idx")
+  @@index([userId, isActive, createdAt], map: "expenses_user_id_is_active_created_at_idx")
   @@map("expenses")
 }
 
@@ -69,6 +71,8 @@ model ExpensePayment {
 
   @@unique([expenseId, periodMonth, periodYear])
   @@index([userId, periodYear, periodMonth])
+  @@index([userId, periodYear, periodMonth, paidAt], map: "expense_payments_user_period_paid_at_idx")
+  @@index([userId, expenseId, periodYear, periodMonth, paidAt], map: "expense_payments_user_expense_period_paid_at_idx")
   @@map("expense_payments")
 }
 

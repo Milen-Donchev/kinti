@@ -1,11 +1,33 @@
 import { Injectable } from '@nestjs/common';
-import { BillingPeriod, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { DashboardPeriodQueryDto } from './dto/dashboard-period-query.dto';
+import {
+  getPeriodEnd,
+  isExpenseDueInPeriod,
+} from '../expenses/expense-schedule.util';
+
+const dashboardExpenseSelect = {
+  id: true,
+  name: true,
+  defaultAmount: true,
+  billingPeriod: true,
+  dueDate: true,
+  type: true,
+  icon: true,
+} satisfies Prisma.ExpenseSelect;
+
+const dashboardPaymentSelect = {
+  id: true,
+  amountSnapshot: true,
+  paidAt: true,
+} satisfies Prisma.ExpensePaymentSelect;
 
 type ExpenseWithPeriodPayments = Prisma.ExpenseGetPayload<{
-  include: {
-    payments: true;
+  select: typeof dashboardExpenseSelect & {
+    payments: {
+      select: typeof dashboardPaymentSelect;
+    };
   };
 }>;
 
@@ -25,45 +47,28 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getMonthlySummary(userId: string, query: DashboardPeriodQueryDto) {
-    const periodStart = new Date(
-      Date.UTC(query.periodYear, query.periodMonth - 1, 1),
-    );
-    const periodEnd = new Date(
-      Date.UTC(query.periodYear, query.periodMonth, 0),
-    );
+    const period = {
+      periodMonth: query.periodMonth,
+      periodYear: query.periodYear,
+    };
+    const periodEnd = getPeriodEnd(period);
 
     const expenses = await this.prisma.expense.findMany({
       where: {
         userId,
         isActive: true,
-        OR: [
-          {
-            billingPeriod: BillingPeriod.monthly,
-            dueDate: {
-              lte: periodEnd,
-            },
-          },
-          {
-            billingPeriod: BillingPeriod.yearly,
-            dueDate: {
-              lte: periodEnd,
-            },
-          },
-          {
-            billingPeriod: BillingPeriod.oneTime,
-            dueDate: {
-              gte: periodStart,
-              lte: periodEnd,
-            },
-          },
-        ],
+        dueDate: {
+          lte: periodEnd,
+        },
       },
-      include: {
+      select: {
+        ...dashboardExpenseSelect,
         payments: {
           where: {
             periodMonth: query.periodMonth,
             periodYear: query.periodYear,
           },
+          select: dashboardPaymentSelect,
         },
       },
       orderBy: {
@@ -71,13 +76,9 @@ export class DashboardService {
       },
     });
 
-    const applicableExpenses = expenses.filter((expense) => {
-      if (expense.billingPeriod !== BillingPeriod.yearly) {
-        return true;
-      }
-
-      return expense.dueDate.getUTCMonth() + 1 === query.periodMonth;
-    });
+    const applicableExpenses = expenses.filter((expense) =>
+      isExpenseDueInPeriod(expense, period),
+    );
 
     const paidExpenses: PaidExpenseSummaryItem[] = [];
     const unpaidExpenses: UnpaidExpenseSummaryItem[] = [];
