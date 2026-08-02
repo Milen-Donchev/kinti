@@ -13,7 +13,6 @@ export function BrandLogo({
   className,
   markClassName,
   wordmark,
-  tagline,
   showWordmark = true,
   compact = false,
 }: BrandLogoProps) {
@@ -26,16 +25,11 @@ export function BrandLogo({
           <p
             className={cn(
               'levko-wordmark truncate text-[rgb(var(--foreground))]',
-              compact ? 'text-lg leading-5' : 'text-xl leading-6',
+              compact ? 'text-xl leading-6' : 'text-2xl leading-7',
             )}
           >
             {wordmark}
           </p>
-          {tagline ? (
-            <p className="truncate text-xs font-semibold text-[rgb(var(--muted-foreground))]">
-              {tagline}
-            </p>
-          ) : null}
         </div>
       ) : null}
     </div>
@@ -45,11 +39,11 @@ export function BrandLogo({
 export function LevkoMark({ className }: { className?: string }) {
   return (
     <img
-      className={cn('h-14 w-14 shrink-0 object-contain', className)}
+      className={cn('h-16 w-16 shrink-0 object-contain', className)}
       src="/levko-logo.png"
       alt="Levko"
-      width="56"
-      height="56"
+      width="64"
+      height="64"
     />
   )
 }

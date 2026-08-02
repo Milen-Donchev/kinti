@@ -1,17 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
+{{- $deployment := .Values.web.deployment | default dict }}
+{{- $strategy := $deployment.strategy | default dict }}
 metadata:
   name: {{ .Values.web.name }}
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.web.replicaCount }}
-  revisionHistoryLimit: {{ .Values.web.deployment.revisionHistoryLimit }}
-  minReadySeconds: {{ .Values.web.deployment.minReadySeconds }}
+  revisionHistoryLimit: {{ $deployment.revisionHistoryLimit | default 3 }}
+  minReadySeconds: {{ $deployment.minReadySeconds | default 5 }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: {{ .Values.web.deployment.strategy.maxSurge }}
-      maxUnavailable: {{ .Values.web.deployment.strategy.maxUnavailable }}
+      maxSurge: {{ $strategy.maxSurge | default 1 }}
+      maxUnavailable: {{ $strategy.maxUnavailable | default 0 }}
   selector:
     matchLabels:
       app: {{ .Values.web.name }}

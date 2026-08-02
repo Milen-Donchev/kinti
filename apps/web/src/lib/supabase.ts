@@ -8,4 +8,12 @@ const fallbackSupabaseAnonKey = 'missing-supabase-anon-key'
 export const supabase = createClient(
   env.supabaseUrl || fallbackSupabaseUrl,
   env.supabaseAnonKey || fallbackSupabaseAnonKey,
+  {
+    auth: {
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+      persistSession: true,
+    },
+  },
 )

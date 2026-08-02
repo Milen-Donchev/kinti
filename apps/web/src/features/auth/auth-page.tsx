@@ -12,10 +12,11 @@ import {
   Sparkles,
   Sun,
 } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import type { EmailOtpType } from '@supabase/supabase-js'
 
 import { Button } from '@/components/ui/button'
 import { BrandLogo } from '@/components/brand/brand-logo'
@@ -55,6 +56,7 @@ function createAuthSchema(t: ReturnType<typeof useI18n>['t']) {
 type AuthFormValues = z.infer<ReturnType<typeof createAuthSchema>>
 
 type AuthMode = 'sign-in' | 'sign-up'
+type AuthCallbackStatus = 'loading' | 'error'
 
 const languageFlags: Record<Language, string> = {
   bg: '🇧🇬',
@@ -86,6 +88,27 @@ const authBenefits = [
   },
 ] as const
 
+function getAuthCallbackUrl() {
+  return `${window.location.origin}/auth/callback`
+}
+
+function readAuthParams() {
+  const searchParams = new URLSearchParams(window.location.search)
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+
+  return {
+    code: searchParams.get('code') ?? hashParams.get('code'),
+    error:
+      searchParams.get('error_description') ??
+      hashParams.get('error_description') ??
+      searchParams.get('error') ??
+      hashParams.get('error'),
+    tokenHash:
+      searchParams.get('token_hash') ?? hashParams.get('token_hash'),
+    type: searchParams.get('type') ?? hashParams.get('type'),
+  }
+}
+
 export function LandingPage() {
   const { language, setLanguage, t } = useI18n()
   const { appearance, setTheme } = useAppearance()
@@ -100,7 +123,7 @@ export function LandingPage() {
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-cyan-100 via-white to-amber-100 px-6 py-8 sm:px-10 lg:px-12 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgb(255_212_90/0.42),transparent_24rem),radial-gradient(circle_at_78%_18%,rgb(53_185_255/0.3),transparent_24rem)] dark:bg-[radial-gradient(circle_at_24%_18%,rgb(53_185_255/0.24),transparent_24rem),radial-gradient(circle_at_78%_16%,rgb(183_125_255/0.22),transparent_24rem)]" />
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl flex-col gap-8">
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl flex-col gap-6">
         <header className="flex items-start justify-between gap-4">
           <BrandLogo
             wordmark={t('common.appName')}
@@ -160,6 +183,8 @@ export function LandingPage() {
             </div>
           ))}
         </section>
+
+        <LegalLinks />
       </div>
     </main>
   )
@@ -209,6 +234,9 @@ export function AuthPage() {
         : await supabase.auth.signUp({
             email: values.email,
             password: values.password,
+            options: {
+              emailRedirectTo: getAuthCallbackUrl(),
+            },
           })
 
     if (result.error) {
@@ -228,7 +256,7 @@ export function AuthPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: getAuthCallbackUrl(),
       },
     })
 
@@ -238,12 +266,13 @@ export function AuthPage() {
   }
 
   return (
-    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-gradient-to-br from-cyan-100 via-white to-amber-100 px-6 py-8 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-cyan-100 via-white to-amber-100 px-6 py-8 sm:px-10 lg:px-12 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgb(255_212_90/0.42),transparent_24rem),radial-gradient(circle_at_78%_18%,rgb(53_185_255/0.3),transparent_24rem)] dark:bg-[radial-gradient(circle_at_24%_18%,rgb(53_185_255/0.24),transparent_24rem),radial-gradient(circle_at_78%_16%,rgb(183_125_255/0.22),transparent_24rem)]" />
-      <div className="relative z-10 grid w-full max-w-md gap-6">
-        <div className="flex items-start justify-between gap-4">
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl flex-col gap-6">
+        <header className="flex items-start justify-between gap-4">
           <Link to="/" aria-label={t('seo.homeTitle')}>
             <BrandLogo
+              className="max-w-[calc(100vw-8.5rem)] [&_p:last-child]:hidden sm:[&_p:last-child]:block"
               wordmark={t('common.appName')}
               tagline={t('common.tagline')}
             />
@@ -255,126 +284,253 @@ export function AuthPage() {
             onLanguageChange={setLanguage}
             onThemeChange={setTheme}
           />
-        </div>
+        </header>
 
-        <Card className="w-full max-w-md border-[rgb(var(--border))] bg-[rgb(var(--surface)/0.88)] shadow-2xl shadow-[rgb(var(--shadow-color)/0.12)] backdrop-blur">
-          <CardHeader>
-            <CardTitle>
-              {mode === 'sign-in'
-                ? t('auth.signInTitle')
-                : t('auth.signUpTitle')}
-            </CardTitle>
-            <CardDescription>
-              {mode === 'sign-in'
-                ? t('auth.signInDescription')
-                : t('auth.signUpDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {missingEnvKeys.length > 0 ? (
-              <div className="mb-4 rounded-md border border-[rgb(var(--warning)/0.35)] bg-[rgb(var(--warning)/0.08)] p-3 text-sm text-[rgb(var(--warning))]">
-                {t('auth.missingEnv', { keys: missingEnvKeys.join(', ') })}
-              </div>
-            ) : null}
+        <section className="grid flex-1 place-items-center pb-4 pt-12 sm:pt-16">
+          <div className="relative mx-auto grid w-full max-w-md gap-6">
+            <Card className="w-full max-w-md border-[rgb(var(--border))] bg-[rgb(var(--surface)/0.9)] shadow-2xl shadow-[rgb(var(--shadow-color)/0.12)] backdrop-blur">
+              <CardHeader className="text-center">
+                <CardTitle className="text-3xl leading-tight sm:text-[2rem]">
+                  {mode === 'sign-in'
+                    ? t('auth.signInTitle')
+                    : t('auth.signUpTitle')}
+                </CardTitle>
+                <CardDescription className="mx-auto max-w-sm leading-6">
+                  {mode === 'sign-in'
+                    ? t('auth.signInDescription')
+                    : t('auth.signUpDescription')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {missingEnvKeys.length > 0 ? (
+                  <div className="mb-4 rounded-md border border-[rgb(var(--warning)/0.35)] bg-[rgb(var(--warning)/0.08)] p-3 text-sm text-[rgb(var(--warning))]">
+                    {t('auth.missingEnv', {
+                      keys: missingEnvKeys.join(', '),
+                    })}
+                  </div>
+                ) : null}
 
-            <form
-              className="grid gap-4"
-              onSubmit={form.handleSubmit(handleSubmit)}
-            >
-              <Field
-                label={t('common.email')}
-                htmlFor="auth-email"
-                error={form.formState.errors.email?.message}
-              >
-                <div className="relative">
-                  <Mail
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]"
-                    size={17}
-                  />
-                  <Input
-                    id="auth-email"
-                    className="pl-10"
-                    placeholder="you@example.com"
-                    type="email"
-                    autoComplete="email"
-                    {...form.register('email')}
-                  />
+                <form
+                  className="grid gap-4"
+                  onSubmit={form.handleSubmit(handleSubmit)}
+                >
+                  <Field
+                    label={t('common.email')}
+                    htmlFor="auth-email"
+                    error={form.formState.errors.email?.message}
+                  >
+                    <div className="relative">
+                      <Mail
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]"
+                        size={17}
+                      />
+                      <Input
+                        id="auth-email"
+                        className="pl-10"
+                        placeholder="you@example.com"
+                        type="email"
+                        autoComplete="email"
+                        {...form.register('email')}
+                      />
+                    </div>
+                  </Field>
+
+                  <Field
+                    label={t('common.password')}
+                    htmlFor="auth-password"
+                    error={form.formState.errors.password?.message}
+                  >
+                    <div className="relative">
+                      <KeyRound
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]"
+                        size={17}
+                      />
+                      <Input
+                        id="auth-password"
+                        className="pl-10"
+                        placeholder="••••••••"
+                        type="password"
+                        autoComplete={
+                          mode === 'sign-in' ? 'current-password' : 'new-password'
+                        }
+                        {...form.register('password')}
+                      />
+                    </div>
+                  </Field>
+
+                  {formError ? (
+                    <p className="rounded-md bg-[rgb(var(--danger)/0.08)] p-3 text-sm text-[rgb(var(--danger))]">
+                      {formError}
+                    </p>
+                  ) : null}
+
+                  {formNotice ? (
+                    <p className="rounded-md bg-[rgb(var(--success)/0.08)] p-3 text-sm text-[rgb(var(--success))]">
+                      {formNotice}
+                    </p>
+                  ) : null}
+
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? (
+                      <Loader2 className="animate-spin" size={17} />
+                    ) : null}
+                    {mode === 'sign-in'
+                      ? t('auth.signInAction')
+                      : t('auth.signUpAction')}
+                  </Button>
+                </form>
+
+                <div className="my-5 flex items-center gap-3 text-xs text-[rgb(var(--muted))]">
+                  <div className="h-px flex-1 bg-[rgb(var(--border))]" />
+                  {t('common.or')}
+                  <div className="h-px flex-1 bg-[rgb(var(--border))]" />
                 </div>
-              </Field>
 
-              <Field
-                label={t('common.password')}
-                htmlFor="auth-password"
-                error={form.formState.errors.password?.message}
-              >
-                <div className="relative">
-                  <KeyRound
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]"
-                    size={17}
-                  />
-                  <Input
-                    id="auth-password"
-                    className="pl-10"
-                    placeholder="••••••••"
-                    type="password"
-                    autoComplete={
-                      mode === 'sign-in' ? 'current-password' : 'new-password'
+                <Button
+                  className="w-full"
+                  variant="secondary"
+                  onClick={handleGoogleSignIn}
+                >
+                  <Mail size={17} />
+                  {t('auth.continueWithGoogle')}
+                </Button>
+
+                <p className="mt-5 text-center text-sm text-[rgb(var(--muted-foreground))]">
+                  {mode === 'sign-in' ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
+                  <button
+                    className="cursor-pointer font-medium text-[rgb(var(--accent))] hover:underline"
+                    type="button"
+                    onClick={() =>
+                      setMode((current) =>
+                        current === 'sign-in' ? 'sign-up' : 'sign-in',
+                      )
                     }
-                    {...form.register('password')}
-                  />
-                </div>
-              </Field>
-
-              {formError ? (
-                <p className="rounded-md bg-[rgb(var(--danger)/0.08)] p-3 text-sm text-[rgb(var(--danger))]">
-                  {formError}
+                  >
+                    {mode === 'sign-in'
+                      ? t('auth.switchToSignUp')
+                      : t('auth.switchToSignIn')}
+                  </button>
                 </p>
-              ) : null}
+              </CardContent>
+            </Card>
 
-              {formNotice ? (
-                <p className="rounded-md bg-[rgb(var(--success)/0.08)] p-3 text-sm text-[rgb(var(--success))]">
-                  {formNotice}
-                </p>
-              ) : null}
+          </div>
+        </section>
 
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? <Loader2 className="animate-spin" size={17} /> : null}
-                {mode === 'sign-in'
-                  ? t('auth.signInAction')
-                  : t('auth.signUpAction')}
-              </Button>
-            </form>
-
-            <div className="my-5 flex items-center gap-3 text-xs text-[rgb(var(--muted))]">
-              <div className="h-px flex-1 bg-[rgb(var(--border))]" />
-              {t('common.or')}
-              <div className="h-px flex-1 bg-[rgb(var(--border))]" />
-            </div>
-
-            <Button className="w-full" variant="secondary" onClick={handleGoogleSignIn}>
-              <Mail size={17} />
-              {t('auth.continueWithGoogle')}
-            </Button>
-
-            <p className="mt-5 text-center text-sm text-[rgb(var(--muted-foreground))]">
-              {mode === 'sign-in' ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
-              <button
-                className="cursor-pointer font-medium text-[rgb(var(--accent))] hover:underline"
-                type="button"
-                onClick={() =>
-                  setMode((current) =>
-                    current === 'sign-in' ? 'sign-up' : 'sign-in',
-                  )
-                }
-              >
-                {mode === 'sign-in'
-                  ? t('auth.switchToSignUp')
-                  : t('auth.switchToSignIn')}
-              </button>
-            </p>
-          </CardContent>
-        </Card>
+        <LegalLinks />
       </div>
+    </main>
+  )
+}
+
+export function AuthCallbackPage() {
+  const navigate = useNavigate()
+  const { t } = useI18n()
+  const [status, setStatus] = useState<AuthCallbackStatus>('loading')
+  const [message, setMessage] = useState<string | null>(null)
+  usePageMeta({
+    title: t('seo.authTitle'),
+    description: t('seo.authDescription'),
+    robots: 'noindex, nofollow',
+  })
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function finishAuth() {
+      const { code, error, tokenHash, type } = readAuthParams()
+
+      if (error) {
+        throw new Error(error)
+      }
+
+      if (code) {
+        const { error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(code)
+
+        if (exchangeError) {
+          throw exchangeError
+        }
+      } else if (tokenHash && type) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: type as EmailOtpType,
+        })
+
+        if (verifyError) {
+          throw verifyError
+        }
+      } else {
+        const { data, error: sessionError } = await supabase.auth.getSession()
+
+        if (sessionError) {
+          throw sessionError
+        }
+
+        if (!data.session) {
+          throw new Error(t('auth.callbackMissingSession'))
+        }
+      }
+
+      if (isMounted) {
+        navigate('/dashboard', { replace: true })
+      }
+    }
+
+    finishAuth().catch((authError: unknown) => {
+      if (!isMounted) {
+        return
+      }
+
+      setStatus('error')
+      setMessage(
+        authError instanceof Error
+          ? authError.message
+          : t('auth.callbackGenericError'),
+      )
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [navigate, t])
+
+  return (
+    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-gradient-to-br from-cyan-100 via-white to-amber-100 px-6 py-8 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgb(255_212_90/0.42),transparent_24rem),radial-gradient(circle_at_78%_18%,rgb(53_185_255/0.3),transparent_24rem)] dark:bg-[radial-gradient(circle_at_24%_18%,rgb(53_185_255/0.24),transparent_24rem),radial-gradient(circle_at_78%_16%,rgb(183_125_255/0.22),transparent_24rem)]" />
+      <Card className="relative z-10 w-full max-w-md border-[rgb(var(--border))] bg-[rgb(var(--surface)/0.9)] shadow-2xl shadow-[rgb(var(--shadow-color)/0.12)] backdrop-blur">
+        <CardHeader>
+          <CardTitle>
+            {status === 'loading'
+              ? t('auth.callbackTitle')
+              : t('auth.callbackErrorTitle')}
+          </CardTitle>
+          <CardDescription>
+            {status === 'loading'
+              ? t('auth.callbackDescription')
+              : t('auth.callbackErrorDescription')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          {status === 'loading' ? (
+            <div className="grid place-items-center py-5">
+              <Loader2
+                className="animate-spin text-[rgb(var(--accent))]"
+                size={28}
+              />
+            </div>
+          ) : (
+            <>
+              <p className="rounded-2xl border-2 border-rose-300 bg-rose-50 p-3 text-sm font-semibold text-[rgb(var(--danger))] shadow-[0_4px_0_rgb(253_164_175)] dark:border-rose-500/50 dark:bg-rose-950/30">
+                {message ?? t('auth.callbackGenericError')}
+              </p>
+              <Button asChild>
+                <Link to="/auth">{t('auth.backToSignIn')}</Link>
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </main>
   )
 }
@@ -473,6 +629,36 @@ function AuthPreferencesPopover({
         </div>
       </PopoverContent>
     </Popover>
+  )
+}
+
+function LegalLinks({ className }: { className?: string }) {
+  const { t } = useI18n()
+
+  return (
+    <nav
+      className={cn(
+        'flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-[rgb(var(--muted-foreground))]',
+        className,
+      )}
+      aria-label={t('legal.navigationLabel')}
+    >
+      <span className="basis-full text-[rgb(var(--muted-foreground)/0.78)] sm:basis-auto">
+        {t('legal.copyright')}
+      </span>
+      <Link
+        className="cursor-pointer hover:text-[rgb(var(--accent))] hover:underline"
+        to="/privacy"
+      >
+        {t('legal.privacy')}
+      </Link>
+      <Link
+        className="cursor-pointer hover:text-[rgb(var(--accent))] hover:underline"
+        to="/terms"
+      >
+        {t('legal.terms')}
+      </Link>
+    </nav>
   )
 }
 

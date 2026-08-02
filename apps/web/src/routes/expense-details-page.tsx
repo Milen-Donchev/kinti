@@ -5,12 +5,14 @@ import {
   Check,
   CircleDollarSign,
   Loader2,
+  Pencil,
   ReceiptText,
   RefreshCw,
+  Trash2,
   Undo2,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 
 import { useAppearance } from '@/app/appearance-context'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +25,10 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { getExpenseIcon } from '@/features/expenses/expense-options'
+import {
+  ArchiveExpenseModal,
+  EditExpenseModal,
+} from '@/features/expenses/expense-management-modals'
 import { MarkExpensePaidModal } from '@/features/expenses/mark-expense-paid-modal'
 import { useI18n } from '@/i18n/i18n-context'
 import { apiRequest } from '@/lib/api'
@@ -78,9 +84,12 @@ export function ExpenseDetailsPage() {
   const { language, t } = useI18n()
   const { appearance } = useAppearance()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [expenseToMarkPaid, setExpenseToMarkPaid] = useState<Expense | null>(
     null,
   )
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null)
+  const [expenseToArchive, setExpenseToArchive] = useState<Expense | null>(null)
   const currentPeriod = getCurrentPeriod()
   const expenseQuery = useQuery({
     queryKey: queryKeys.expense(expenseId ?? ''),
@@ -203,15 +212,48 @@ export function ExpenseDetailsPage() {
   const periodTone = getBillingPeriodTone(expense.billingPeriod)
   const importanceTone = getImportanceTone(expense.importance)
   const isDueInCurrentPeriod = isExpenseDueInPeriod(expense, currentPeriod)
+  const statusTone = currentPayment
+    ? 'border-[#29c776] bg-[#ddfbea] text-[#16a063] shadow-[0_3px_0_#16a063] dark:bg-[#153a2b] dark:text-[#36d887] dark:shadow-[0_3px_0_#0f7f50]'
+    : isDueInCurrentPeriod
+      ? 'border-[#ffd45a] bg-[#fff4ce] text-[#8a6414] shadow-[0_3px_0_#d39d24] dark:bg-[#493919] dark:text-[#ffd45a]'
+      : 'border-[#35b9ff] bg-[#e2f6ff] text-[#1688c7] shadow-[0_3px_0_#1688c7] dark:bg-[#15334a] dark:text-cyan-200'
+  const statusLabel = currentPayment
+    ? t('expenseDetails.statusPaid')
+    : isDueInCurrentPeriod
+      ? t('expenseDetails.statusDue')
+      : t('expenseDetails.statusUpcoming')
 
   return (
     <div className="grid gap-5">
-      <Button asChild className="w-fit" variant="secondary">
-        <Link to="/expenses">
-          <ArrowLeft size={16} />
-          {t('expenseDetails.backToExpenses')}
-        </Link>
-      </Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Button asChild className="w-fit" variant="secondary">
+          <Link to="/expenses">
+            <ArrowLeft size={16} />
+            {t('expenseDetails.backToExpenses')}
+          </Link>
+        </Button>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            className="h-10 px-4 text-xs"
+            type="button"
+            variant="secondary"
+            onClick={() => setExpenseToEdit(expense)}
+          >
+            <Pencil size={15} />
+            {t('expenseDetails.edit')}
+          </Button>
+          <Button
+            className="h-10 px-4 text-xs"
+            type="button"
+            variant="danger"
+            onClick={() => setExpenseToArchive(expense)}
+          >
+            <Trash2 size={15} />
+            {t('expenseDetails.archive')}
+          </Button>
+        </div>
+      </div>
 
       <section
         className={`overflow-hidden rounded-3xl border-2 p-4 shadow-[0_6px_0_rgb(var(--border))] ${iconTone.soft} ${iconTone.border}`}
@@ -224,10 +266,16 @@ export function ExpenseDetailsPage() {
               <Icon size={24} />
             </div>
             <div className="min-w-0">
-              <Badge className={`border-2 ${periodTone.border} ${periodTone.soft}`}>
-                <CalendarDays size={13} className="mr-1" />
-                {translateBillingPeriod(expense.billingPeriod, t)}
-              </Badge>
+              <div className="flex flex-wrap gap-2">
+                <Badge className={`border-2 ${periodTone.border} ${periodTone.soft}`}>
+                  <CalendarDays size={13} className="mr-1" />
+                  {translateBillingPeriod(expense.billingPeriod, t)}
+                </Badge>
+                <Badge className={`border-2 ${statusTone}`}>
+                  {currentPayment ? <Check size={13} className="mr-1" /> : null}
+                  {statusLabel}
+                </Badge>
+              </div>
               <h1 className="mt-3 truncate text-2xl font-extrabold tracking-normal">
                 {expense.name}
               </h1>
@@ -393,6 +441,15 @@ export function ExpenseDetailsPage() {
             queryKey: queryKeys.expense(expenseId ?? ''),
           })
         }
+      />
+      <EditExpenseModal
+        expense={expenseToEdit}
+        onClose={() => setExpenseToEdit(null)}
+      />
+      <ArchiveExpenseModal
+        expense={expenseToArchive}
+        onClose={() => setExpenseToArchive(null)}
+        onArchived={() => navigate('/expenses')}
       />
     </div>
   )

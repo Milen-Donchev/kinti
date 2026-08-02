@@ -14,6 +14,11 @@ const AuthPage = lazy(() =>
     default: module.AuthPage,
   })),
 )
+const AuthCallbackPage = lazy(() =>
+  import('@/features/auth/auth-page').then((module) => ({
+    default: module.AuthCallbackPage,
+  })),
+)
 const AuthProvider = lazy(() =>
   import('@/features/auth/auth-provider').then((module) => ({
     default: module.AuthProvider,
@@ -49,6 +54,16 @@ const SettingsPage = lazy(() =>
     default: module.SettingsPage,
   })),
 )
+const PrivacyPolicyPage = lazy(() =>
+  import('@/routes/legal-pages').then((module) => ({
+    default: module.PrivacyPolicyPage,
+  })),
+)
+const TermsPage = lazy(() =>
+  import('@/routes/legal-pages').then((module) => ({
+    default: module.TermsPage,
+  })),
+)
 
 function RouteLoader() {
   const { t } = useI18n()
@@ -81,6 +96,22 @@ const router = createBrowserRouter([
   {
     path: '/auth',
     element: authElement(<AuthPage />),
+  },
+  {
+    path: '/auth/callback',
+    element: lazyElement(<AuthCallbackPage />),
+  },
+  {
+    path: '/auth/confirm',
+    element: lazyElement(<AuthCallbackPage />),
+  },
+  {
+    path: '/privacy',
+    element: lazyElement(<PrivacyPolicyPage />),
+  },
+  {
+    path: '/terms',
+    element: lazyElement(<TermsPage />),
   },
   {
     element: authElement(<ProtectedRoute />),

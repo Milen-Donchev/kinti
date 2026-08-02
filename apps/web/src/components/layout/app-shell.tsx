@@ -181,7 +181,7 @@ export function AppShell() {
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 shadow-[0_4px_0_rgb(var(--border))] lg:hidden">
           <BrandLogo
             compact
-            markClassName="h-9 w-9 drop-shadow-[0_3px_0_#0f7f50]"
+            markClassName="h-11 w-11"
             wordmark={t('common.appName')}
           />
           <Button size="sm" onClick={openAddExpenseModal}>
