@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="bg">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Потвърди своя акаунт в Левко</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background: #f4fbf6;
+      color: #0b2545;
+      font-family:
+        Arial Rounded MT Bold, Nunito, Arial, Helvetica, sans-serif;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="background: #f4fbf6; padding: 32px 16px"
+    >
+      <tr>
+        <td align="center">
+          <table
+            role="presentation"
+            width="100%"
+            cellspacing="0"
+            cellpadding="0"
+            style="
+              max-width: 560px;
+              overflow: hidden;
+              border: 2px solid #b8d5ee;
+              border-radius: 24px;
+              background: #ffffff;
+              box-shadow: 0 8px 0 #b8d5ee;
+            "
+          >
+            <tr>
+              <td style="padding: 28px 28px 12px">
+                <table role="presentation" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="padding-right: 12px">
+                      <img
+                        src="https://levko.bg/levko-logo.png"
+                        width="56"
+                        height="56"
+                        alt="Левко"
+                        style="display: block; border: 0"
+                      />
+                    </td>
+                    <td>
+                      <div
+                        style="
+                          color: #0b2545;
+                          font-size: 28px;
+                          font-weight: 900;
+                          line-height: 1;
+                        "
+                      >
+                        Левко
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding: 12px 28px 0">
+                <div
+                  style="
+                    display: inline-block;
+                    border: 2px solid #29c776;
+                    border-radius: 14px;
+                    background: #ddfbea;
+                    color: #138653;
+                    font-size: 13px;
+                    font-weight: 800;
+                    padding: 8px 12px;
+                  "
+                >
+                  Още една малка победа срещу хаоса
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding: 18px 28px 0">
+                <h1
+                  style="
+                    margin: 0;
+                    color: #0b2545;
+                    font-size: 30px;
+                    line-height: 1.15;
+                    font-weight: 900;
+                  "
+                >
+                  Потвърди своя имейл
+                </h1>
+                <p
+                  style="
+                    margin: 14px 0 0;
+                    color: #4b617c;
+                    font-size: 16px;
+                    line-height: 1.65;
+                  "
+                >
+                  Здравей! Само трябва да потвърдим, че този имейл е твой, и
+                  можеш да започнеш да подреждаш разходите си в Левко.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding: 28px">
+                <a
+                  href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email"
+                  style="
+                    display: inline-block;
+                    border-radius: 16px;
+                    background: #29c776;
+                    color: #ffffff;
+                    font-size: 16px;
+                    font-weight: 900;
+                    line-height: 1;
+                    padding: 16px 22px;
+                    text-decoration: none;
+                    box-shadow: 0 5px 0 #16a063;
+                  "
+                >
+                  Потвърди акаунта
+                </a>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding: 0 28px 26px">
+                <p
+                  style="
+                    margin: 0;
+                    color: #73849a;
+                    font-size: 13px;
+                    line-height: 1.6;
+                  "
+                >
+                  Ако бутонът не работи, копирай този линк в браузъра си:
+                </p>
+                <p
+                  style="
+                    margin: 8px 0 0;
+                    color: #0b2545;
+                    font-size: 12px;
+                    line-height: 1.6;
+                    word-break: break-all;
+                  "
+                >
+                  {{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                style="
+                  border-top: 1px solid #e2edf7;
+                  padding: 18px 28px 24px;
+                "
+              >
+                <p
+                  style="
+                    margin: 0;
+                    color: #73849a;
+                    font-size: 12px;
+                    line-height: 1.6;
+                  "
+                >
+                  Ако не си създавал акаунт в Левко, можеш спокойно да
+                  игнорираш този имейл.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p
+            style="
+              margin: 18px 0 0;
+              color: #73849a;
+              font-size: 12px;
+              line-height: 1.6;
+            "
+          >
+            © 2026 Milen Donchev. Всички права запазени.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

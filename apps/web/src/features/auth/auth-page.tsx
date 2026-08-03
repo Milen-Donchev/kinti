@@ -163,6 +163,35 @@ export function LandingPage() {
           <HeroPreview />
         </section>
 
+        <section className="rounded-3xl border-2 border-[#b8d5ee] bg-white/76 p-4 shadow-[0_5px_0_#b8d5ee] backdrop-blur dark:border-cyan-300/20 dark:bg-white/8 dark:shadow-none sm:p-5">
+          <div className="max-w-4xl">
+            <p className="text-xs font-extrabold uppercase tracking-wide text-[#1688c7] dark:text-cyan-300">
+              {t('auth.purposeEyebrow')}
+            </p>
+            <h2 className="mt-1 text-2xl font-extrabold leading-tight text-[rgb(var(--foreground))]">
+              {t('auth.purposeTitle')}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[rgb(var(--muted-foreground))] sm:text-base sm:leading-7">
+              {t('auth.purposeDescription')}
+            </p>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-[rgb(var(--foreground))]">
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#29c776]" />
+              {t('auth.purpose.expensesTitle')}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#35b9ff]" />
+              {t('auth.purpose.dashboardTitle')}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#ffca3a]" />
+              {t('auth.purpose.authTitle')}
+            </span>
+          </div>
+        </section>
+
         <section className="grid gap-3 sm:grid-cols-3">
           {authBenefits.map((benefit) => (
             <div

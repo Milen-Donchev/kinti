@@ -22,11 +22,32 @@ Recommended production values:
   - `http://localhost:5173/auth/callback`
   - `http://localhost:5173/auth/confirm`
 
+If confirmation emails open a dead link or redirect to the wrong place, check
+this section first. The email template can generate a correct link only when the
+target URL is allowed by Supabase.
+
 ## Email Templates
 
-Prefer Supabase's default `{{ .ConfirmationURL }}` template when possible.
+Use the custom confirmation template from:
 
-If using a custom confirmation link with token hash, point it to the callback URL:
+```text
+docs/supabase-confirm-signup-email-template.html
+```
+
+In Supabase Dashboard, open Authentication -> Email Templates -> Confirm signup
+and paste the HTML.
+
+The template intentionally sends users to the frontend callback route with the
+token hash:
+
+```html
+{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email
+```
+
+This matches the frontend callback handler, which verifies the token in the
+browser and then redirects the user to `/dashboard`.
+
+For reference, the minimum confirmation link is:
 
 ```html
 <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">
@@ -45,12 +66,23 @@ In Google Cloud, create an OAuth Client ID with application type `Web applicatio
 Authorized JavaScript origins:
 
 - `https://levko.bg`
+- `https://www.levko.bg`
 - `http://localhost:5173`
 
 Authorized redirect URIs:
 
 - Use the callback URL shown in the Supabase Google provider page.
 - For production Supabase project this usually looks like:
-  `https://<project-ref>.supabase.co/auth/v1/callback`
+  `https://auzgqefookfzxmbejpjx.supabase.co/auth/v1/callback`
 
 Then copy the Google Client ID and Client Secret back into the Supabase Google provider settings.
+
+Important distinction:
+
+- Google Cloud redirect URI is the Supabase callback:
+  `https://auzgqefookfzxmbejpjx.supabase.co/auth/v1/callback`
+- Levko frontend redirect is passed from the app as:
+  `https://levko.bg/auth/callback`
+
+Supabase receives the Google OAuth callback first, then redirects the browser to
+Levko's `/auth/callback` route.
