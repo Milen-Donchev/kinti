@@ -2,23 +2,13 @@ import { Suspense, lazy, type ReactNode } from 'react'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 
 import { ProtectedRoute } from '@/app/protected-route'
+import {
+  AuthCallbackPage,
+  AuthPage,
+  LandingPage,
+} from '@/features/auth/auth-page'
 import { useI18n } from '@/i18n/i18n-context'
 
-const LandingPage = lazy(() =>
-  import('@/features/auth/auth-page').then((module) => ({
-    default: module.LandingPage,
-  })),
-)
-const AuthPage = lazy(() =>
-  import('@/features/auth/auth-page').then((module) => ({
-    default: module.AuthPage,
-  })),
-)
-const AuthCallbackPage = lazy(() =>
-  import('@/features/auth/auth-page').then((module) => ({
-    default: module.AuthCallbackPage,
-  })),
-)
 const AuthProvider = lazy(() =>
   import('@/features/auth/auth-provider').then((module) => ({
     default: module.AuthProvider,
@@ -91,7 +81,7 @@ function authElement(element: ReactNode) {
 const router = createBrowserRouter([
   {
     path: '/',
-    element: lazyElement(<LandingPage />),
+    element: <LandingPage />,
   },
   {
     path: '/auth',
@@ -99,11 +89,11 @@ const router = createBrowserRouter([
   },
   {
     path: '/auth/callback',
-    element: lazyElement(<AuthCallbackPage />),
+    element: <AuthCallbackPage />,
   },
   {
     path: '/auth/confirm',
-    element: lazyElement(<AuthCallbackPage />),
+    element: <AuthCallbackPage />,
   },
   {
     path: '/privacy',

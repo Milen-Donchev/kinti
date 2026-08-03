@@ -1,0 +1,146 @@
+:root {
+  color: #0b2545;
+  background: #f7fff6;
+  font-family: Nunito, "Arial Rounded MT Bold", Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.static-page {
+  min-height: 100vh;
+  padding: 32px 24px;
+  background:
+    radial-gradient(circle at 20% 18%, rgb(255 212 90 / 42%), transparent 24rem),
+    radial-gradient(circle at 78% 18%, rgb(53 185 255 / 30%), transparent 24rem),
+    linear-gradient(135deg, #cffafe, #ffffff 45%, #fef3c7);
+}
+
+.static-shell {
+  width: min(100%, 920px);
+  margin: 0 auto;
+}
+
+.static-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #0b2545;
+  text-decoration: none;
+}
+
+.static-brand img {
+  display: block;
+  width: 64px;
+  height: 64px;
+}
+
+.static-brand strong {
+  font-size: 32px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.static-hero,
+.static-document {
+  max-width: 720px;
+  margin-top: 56px;
+}
+
+.static-kicker {
+  display: inline-block;
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border: 2px solid #29c776;
+  border-radius: 14px;
+  background: #ddfbea;
+  color: #138653;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.static-page h1 {
+  margin: 0;
+  color: #0b2545;
+  font-size: clamp(40px, 7vw, 72px);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.02;
+}
+
+.static-document h1 {
+  font-size: clamp(36px, 6vw, 56px);
+}
+
+.static-page h2 {
+  margin: 28px 0 10px;
+  color: #0b2545;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.static-page p,
+.static-page li {
+  color: #4b617c;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.static-hero p {
+  max-width: 640px;
+}
+
+.static-cta {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  background: #29c776;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.static-links {
+  margin-top: 28px;
+  font-size: 14px;
+}
+
+.static-links a {
+  color: #0b2545;
+}
+
+.static-card {
+  margin-top: 18px;
+  padding: 18px;
+  border: 2px solid #b8d5ee;
+  border-radius: 24px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 5px 0 #b8d5ee;
+}
+
+@media (max-width: 640px) {
+  .static-page {
+    padding: 24px 18px;
+  }
+
+  .static-brand img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .static-brand strong {
+    font-size: 28px;
+  }
+
+  .static-hero,
+  .static-document {
+    margin-top: 40px;
+  }
+}
