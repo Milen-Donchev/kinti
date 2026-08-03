@@ -126,7 +126,7 @@ export function LandingPage() {
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl flex-col gap-6">
         <header className="flex items-start justify-between gap-4">
           <BrandLogo
-            wordmark={t('common.appName')}
+            wordmark="Levko"
             tagline={t('common.tagline')}
           />
 
