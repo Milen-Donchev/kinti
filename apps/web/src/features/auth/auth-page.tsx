@@ -92,6 +92,34 @@ function getAuthCallbackUrl() {
   return `${window.location.origin}/auth/callback`
 }
 
+function getAuthErrorMessage(
+  error: unknown,
+  mode: AuthMode,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  const message = error instanceof Error ? error.message.toLowerCase() : ''
+
+  if (message.includes('invalid login credentials')) {
+    return t('auth.errorInvalidCredentials')
+  }
+
+  if (message.includes('already registered') || message.includes('already exists')) {
+    return t('auth.errorEmailExists')
+  }
+
+  if (message.includes('email not confirmed')) {
+    return t('auth.errorEmailNotConfirmed')
+  }
+
+  if (message.includes('rate limit') || message.includes('too many')) {
+    return t('auth.errorTooManyRequests')
+  }
+
+  return mode === 'sign-in'
+    ? t('auth.errorSignInFailed')
+    : t('auth.errorSignUpFailed')
+}
+
 function readAuthParams() {
   const searchParams = new URLSearchParams(window.location.search)
   const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
@@ -103,8 +131,7 @@ function readAuthParams() {
       hashParams.get('error_description') ??
       searchParams.get('error') ??
       hashParams.get('error'),
-    tokenHash:
-      searchParams.get('token_hash') ?? hashParams.get('token_hash'),
+    tokenHash: searchParams.get('token_hash') ?? hashParams.get('token_hash'),
     type: searchParams.get('type') ?? hashParams.get('type'),
   }
 }
@@ -125,10 +152,7 @@ export function LandingPage() {
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl flex-col gap-6">
         <header className="flex items-start justify-between gap-4">
-          <BrandLogo
-            wordmark="Levko"
-            tagline={t('common.tagline')}
-          />
+          <BrandLogo wordmark="Levko" tagline={t('common.tagline')} />
 
           <AuthPreferencesPopover
             language={language}
@@ -269,7 +293,7 @@ export function AuthPage() {
           })
 
     if (result.error) {
-      setFormError(result.error.message)
+      setFormError(getAuthErrorMessage(result.error, mode, t))
       return
     }
 
@@ -290,7 +314,7 @@ export function AuthPage() {
     })
 
     if (error) {
-      setFormError(error.message)
+      setFormError(t('auth.errorGoogleFailed'))
     }
   }
 
@@ -380,7 +404,9 @@ export function AuthPage() {
                         placeholder="••••••••"
                         type="password"
                         autoComplete={
-                          mode === 'sign-in' ? 'current-password' : 'new-password'
+                          mode === 'sign-in'
+                            ? 'current-password'
+                            : 'new-password'
                         }
                         {...form.register('password')}
                       />
@@ -425,7 +451,9 @@ export function AuthPage() {
                 </Button>
 
                 <p className="mt-5 text-center text-sm text-[rgb(var(--muted-foreground))]">
-                  {mode === 'sign-in' ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
+                  {mode === 'sign-in'
+                    ? t('auth.noAccount')
+                    : t('auth.hasAccount')}{' '}
                   <button
                     className="cursor-pointer font-medium text-[rgb(var(--accent))] hover:underline"
                     type="button"
@@ -442,7 +470,6 @@ export function AuthPage() {
                 </p>
               </CardContent>
             </Card>
-
           </div>
         </section>
 
@@ -470,15 +497,35 @@ export function AuthCallbackPage() {
       const { code, error, tokenHash, type } = readAuthParams()
 
       if (error) {
-        throw new Error(error)
+        throw new Error(t('auth.callbackGenericError'))
       }
 
       if (code) {
+        const { data: existingSession } = await supabase.auth.getSession()
+
+        if (existingSession.session) {
+          if (isMounted) {
+            navigate('/dashboard', { replace: true })
+          }
+
+          return
+        }
+
         const { error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(code)
 
         if (exchangeError) {
-          throw exchangeError
+          const { data: recoveredSession } = await supabase.auth.getSession()
+
+          if (recoveredSession.session) {
+            if (isMounted) {
+              navigate('/dashboard', { replace: true })
+            }
+
+            return
+          }
+
+          throw new Error(t('auth.callbackGenericError'))
         }
       } else if (tokenHash && type) {
         const { error: verifyError } = await supabase.auth.verifyOtp({
@@ -487,13 +534,13 @@ export function AuthCallbackPage() {
         })
 
         if (verifyError) {
-          throw verifyError
+          throw new Error(t('auth.callbackGenericError'))
         }
       } else {
         const { data, error: sessionError } = await supabase.auth.getSession()
 
         if (sessionError) {
-          throw sessionError
+          throw new Error(t('auth.callbackGenericError'))
         }
 
         if (!data.session) {
@@ -624,7 +671,9 @@ function AuthPreferencesPopover({
           variant="secondary"
           aria-label={t('auth.preferences')}
         >
-          <span className="text-base leading-none">{languageFlags[language]}</span>
+          <span className="text-base leading-none">
+            {languageFlags[language]}
+          </span>
           <ThemeIcon size={15} />
           <Settings2 size={15} />
         </Button>

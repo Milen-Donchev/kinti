@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -13,17 +14,18 @@ import type { AuthUser } from './types';
 export class AuthService {
   private readonly jwks: ReturnType<typeof createRemoteJWKSet>;
   private readonly issuer: string;
+  private readonly supabaseUrl: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    const supabaseUrl = this.configService.getOrThrow<string>('SUPABASE_URL');
+    this.supabaseUrl = this.configService.getOrThrow<string>('SUPABASE_URL');
 
     this.issuer = this.configService.getOrThrow<string>('SUPABASE_JWT_ISSUER');
 
     this.jwks = createRemoteJWKSet(
-      new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`),
+      new URL(`${this.supabaseUrl}/auth/v1/.well-known/jwks.json`),
     );
   }
 
@@ -61,5 +63,44 @@ export class AuthService {
     }
 
     return profile;
+  }
+
+  async deleteAccount(userId: string) {
+    await this.deleteSupabaseAuthUser(userId);
+
+    await this.prisma.profile.deleteMany({
+      where: {
+        id: userId,
+      },
+    });
+  }
+
+  private async deleteSupabaseAuthUser(userId: string) {
+    const serviceRoleKey = this.configService.get<string>(
+      'SUPABASE_SERVICE_ROLE_KEY',
+    );
+
+    if (!serviceRoleKey) {
+      throw new ServiceUnavailableException(
+        'Account deletion is not configured',
+      );
+    }
+
+    const response = await fetch(
+      `${this.supabaseUrl}/auth/v1/admin/users/${userId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new ServiceUnavailableException(
+        'Unable to delete account right now',
+      );
+    }
   }
 }

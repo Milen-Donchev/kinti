@@ -16,6 +16,7 @@ api:
   secrets:
     DATABASE_URL: ""
     DIRECT_URL: ""
+    SUPABASE_SERVICE_ROLE_KEY: ""
   resources:
     requests:
       cpu: 100m

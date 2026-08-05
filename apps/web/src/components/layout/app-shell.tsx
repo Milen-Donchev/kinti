@@ -5,6 +5,7 @@ import {
   LogOut,
   Plus,
   Settings,
+  UserRound,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { Suspense, lazy, useState } from 'react'
@@ -81,6 +82,8 @@ export function AppShell() {
   const todayExpensesCount =
     expensesQuery.data?.filter((expense) => isExpenseDueToday(expense, today))
       .length ?? 0
+  const userDisplayName = getUserDisplayName(user)
+  const userAvatarUrl = getUserAvatarUrl(user)
 
   function openAddExpenseModal() {
     setIsAddExpenseOpen(true)
@@ -108,11 +111,23 @@ export function AppShell() {
 
           <div className="mt-4 rounded-2xl border-2 border-[#35b9ff] bg-[#e2f6ff] p-3 text-slate-950 shadow-[0_5px_0_#35b9ff] dark:bg-[#15334a] dark:text-cyan-50">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#35b9ff] text-white shadow-[0_3px_0_#1688c7]">
-                <CalendarDays size={17} />
-              </div>
+              {userAvatarUrl ? (
+                <img
+                  className="h-11 w-11 shrink-0 rounded-xl border-2 border-white object-cover shadow-[0_3px_0_#1688c7] dark:border-cyan-100/20"
+                  src={userAvatarUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#35b9ff] text-white shadow-[0_3px_0_#1688c7]">
+                  <UserRound size={18} />
+                </div>
+              )}
               <div className="min-w-0">
-                <p className="text-sm font-extrabold">
+                <p className="truncate text-sm font-extrabold">
+                  {userDisplayName}
+                </p>
+                <p className="text-xs font-bold text-slate-700 dark:text-cyan-100">
                   {formatShortDate(today, language)}
                 </p>
                 <p className="truncate text-xs text-slate-600 dark:text-cyan-200">
@@ -160,19 +175,14 @@ export function AppShell() {
               {t('nav.settings')}
             </NavLink>
 
-            <div className="rounded-2xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface-subtle))] p-3 shadow-[0_5px_0_rgb(var(--border))]">
-            <p className="truncate text-sm font-medium">
-              {user?.email ?? t('common.signedIn')}
-            </p>
             <button
-              className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]"
+              className="flex h-11 cursor-pointer items-center gap-3 rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface-subtle))] px-3 text-sm font-extrabold text-[rgb(var(--muted-foreground))] shadow-[0_4px_0_rgb(var(--border))] transition-colors hover:bg-[rgb(var(--surface))] hover:text-[rgb(var(--foreground))]"
               type="button"
               onClick={() => void signOut()}
             >
-              <LogOut size={16} />
+              <LogOut size={18} />
               {t('common.signOut')}
             </button>
-            </div>
           </div>
         </div>
       </aside>
@@ -241,6 +251,31 @@ function formatShortDate(date: Date, language: string) {
     month: '2-digit',
     year: 'numeric',
   }).format(date)
+}
+
+function getUserDisplayName(user: ReturnType<typeof useAuth>['user']) {
+  const metadata = user?.user_metadata ?? {}
+  const displayName =
+    getMetadataString(metadata, 'full_name') ??
+    getMetadataString(metadata, 'name') ??
+    getMetadataString(metadata, 'display_name')
+
+  return displayName || user?.email || ''
+}
+
+function getUserAvatarUrl(user: ReturnType<typeof useAuth>['user']) {
+  const metadata = user?.user_metadata ?? {}
+
+  return (
+    getMetadataString(metadata, 'avatar_url') ??
+    getMetadataString(metadata, 'picture')
+  )
+}
+
+function getMetadataString(metadata: Record<string, unknown>, key: string) {
+  const value = metadata[key]
+
+  return typeof value === 'string' && value.length > 0 ? value : undefined
 }
 
 function isExpenseDueToday(expense: Expense, today: Date) {

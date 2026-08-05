@@ -12,6 +12,51 @@ body {
   margin: 0;
 }
 
+.app-boot {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 18%, rgb(255 212 90 / 34%), transparent 24rem),
+    radial-gradient(circle at 78% 18%, rgb(53 185 255 / 28%), transparent 24rem),
+    linear-gradient(135deg, #cffafe, #ffffff 48%, #fef3c7);
+}
+
+.app-boot-card {
+  display: grid;
+  width: 132px;
+  height: 132px;
+  place-items: center;
+  border: 2px solid #b8d5ee;
+  border-radius: 32px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 8px 0 #b8d5ee;
+}
+
+.app-boot-card img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+}
+
+.app-boot-spinner {
+  width: 34px;
+  height: 34px;
+  margin-top: 10px;
+  border: 3px solid rgb(41 199 118 / 22%);
+  border-top-color: #29c776;
+  border-radius: 999px;
+  animation: app-boot-spin 850ms linear infinite;
+}
+
+@keyframes app-boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .static-page {
   min-height: 100vh;
   padding: 32px 24px;
@@ -142,5 +187,30 @@ body {
   .static-hero,
   .static-document {
     margin-top: 40px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f5f9ff;
+    background: #0a0f22;
+  }
+
+  .app-boot {
+    background:
+      radial-gradient(circle at 24% 18%, rgb(53 185 255 / 24%), transparent 24rem),
+      radial-gradient(circle at 78% 16%, rgb(183 125 255 / 22%), transparent 24rem),
+      linear-gradient(180deg, #0a0f22 0%, #1b274b 48%, #060a18 100%);
+  }
+
+  .app-boot-card {
+    border-color: #3f5180;
+    background: rgb(20 29 56 / 88%);
+    box-shadow: 0 8px 0 #3f5180;
+  }
+
+  .app-boot-spinner {
+    border-color: rgb(54 216 135 / 22%);
+    border-top-color: #36d887;
   }
 }

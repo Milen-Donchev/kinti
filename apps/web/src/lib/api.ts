@@ -12,23 +12,62 @@ type ApiErrorBody = {
   code?: string
 }
 
-async function readErrorMessage(response: Response) {
+export class ApiError extends Error {
+  constructor({
+    code,
+    message,
+    requestId,
+    statusCode,
+  }: {
+    code: string
+    message: string
+    requestId?: string
+    statusCode?: number
+  }) {
+    super(message)
+    this.name = 'ApiError'
+    this.code = code
+    this.requestId = requestId
+    this.statusCode = statusCode
+  }
+
+  code: string
+  requestId?: string
+  statusCode?: number
+}
+
+async function readError(response: Response) {
   const fallbackMessage = `Request failed with status ${response.status}`
   const contentType = response.headers.get('content-type') ?? ''
 
   if (!contentType.includes('application/json')) {
-    return (await response.text()) || fallbackMessage
+    return {
+      code: `HTTP_${response.status}`,
+      message: (await response.text()) || fallbackMessage,
+      statusCode: response.status,
+    }
   }
 
   try {
-    const body = (await response.json()) as ApiErrorBody
+    const body = (await response.json()) as ApiErrorBody & {
+      requestId?: string
+    }
     const message = Array.isArray(body.message)
       ? body.message.join('\n')
       : body.message
 
-    return message || body.error || fallbackMessage
+    return {
+      code: body.code ?? `HTTP_${body.statusCode ?? response.status}`,
+      message: message || body.error || fallbackMessage,
+      requestId: body.requestId,
+      statusCode: body.statusCode ?? response.status,
+    }
   } catch {
-    return fallbackMessage
+    return {
+      code: `HTTP_${response.status}`,
+      message: fallbackMessage,
+      statusCode: response.status,
+    }
   }
 }
 
@@ -41,7 +80,11 @@ export async function apiRequest<TResponse>(
   } = await supabase.auth.getSession()
 
   if (!session?.access_token) {
-    throw new Error('Missing active session.')
+    throw new ApiError({
+      code: 'AUTH_MISSING_SESSION',
+      message: 'Missing active session.',
+      statusCode: 401,
+    })
   }
 
   const response = await fetch(`${env.apiUrl}${path}`, {
@@ -55,7 +98,7 @@ export async function apiRequest<TResponse>(
   })
 
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response))
+    throw new ApiError(await readError(response))
   }
 
   if (response.status === 204) {

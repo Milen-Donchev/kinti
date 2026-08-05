@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
@@ -19,5 +19,13 @@ export class AuthController {
       user,
       profile,
     };
+  }
+
+  @Delete('me')
+  @HttpCode(204)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @UseGuards(AuthGuard)
+  async deleteMe(@CurrentUser() user: AuthUser) {
+    await this.authService.deleteAccount(user.id);
   }
 }

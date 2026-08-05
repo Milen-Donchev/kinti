@@ -14,7 +14,13 @@ import { useState } from 'react'
 
 import { useAppearance } from '@/app/appearance-context'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Popover,
   PopoverContent,
@@ -250,7 +256,7 @@ export function DashboardPage() {
             alt=""
           />
 
-          <div className="relative z-20 flex min-h-[300px] flex-col justify-between gap-8 p-5 sm:p-6 md:pr-56 lg:p-7 lg:pr-64 xl:pr-72">
+          <div className="relative z-20 flex h-full min-h-[300px] flex-col gap-8 p-5 sm:p-6 md:pr-56 lg:p-7 lg:pr-64 xl:pr-35">
             <div className="pt-3 sm:pt-5">
               <h1 className="max-w-xl text-3xl font-extrabold tracking-normal text-slate-950 dark:text-white sm:text-4xl">
                 {t('dashboard.title')}
@@ -259,15 +265,19 @@ export function DashboardPage() {
                 {t('dashboard.description')}
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="mt-auto flex flex-wrap gap-3">
               <span className="rounded-xl border-2 border-[#b8d5ee] bg-white px-3 py-2 text-sm font-extrabold text-slate-900 shadow-[0_4px_0_#b8d5ee] dark:border-white/20 dark:bg-white/12 dark:text-white dark:shadow-none">
-                {t('dashboard.hero.total', { count: summary?.counts.total ?? 0 })}
+                {t('dashboard.hero.total', {
+                  count: summary?.counts.total ?? 0,
+                })}
               </span>
               <span className="rounded-xl border-2 border-[#29c776] bg-[#ddfbea] px-3 py-2 text-sm font-extrabold text-[#16a063] shadow-[0_4px_0_#29c776] dark:bg-emerald-400/18 dark:text-emerald-100 dark:shadow-none">
                 {t('dashboard.hero.paid', { count: summary?.counts.paid ?? 0 })}
               </span>
               <span className="rounded-xl border-2 border-[#ff6b7a] bg-[#ffe4e8] px-3 py-2 text-sm font-extrabold text-[#d64b58] shadow-[0_4px_0_#ff6b7a] dark:bg-pink-400/18 dark:text-pink-100 dark:shadow-none">
-                {t('dashboard.hero.open', { count: summary?.counts.unpaid ?? 0 })}
+                {t('dashboard.hero.open', {
+                  count: summary?.counts.unpaid ?? 0,
+                })}
               </span>
             </div>
           </div>
@@ -391,7 +401,11 @@ export function DashboardPage() {
           title={t('dashboard.metric.planned')}
           value={
             summary
-              ? formatMoney(summary.totals.planned, language, appearance.currency)
+              ? formatMoney(
+                  summary.totals.planned,
+                  language,
+                  appearance.currency,
+                )
               : '...'
           }
           description={t('dashboard.metric.plannedDescription')}
@@ -434,28 +448,32 @@ export function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t('dashboard.remainingTitle')}</CardTitle>
-            <CardDescription>{t('dashboard.remainingDescription')}</CardDescription>
+            <CardDescription>
+              {t('dashboard.remainingDescription')}
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             {summaryQuery.isLoading ? (
               <EmptyLine text={t('dashboard.loadingExpenses')} />
             ) : null}
-            {summary?.unpaidExpenses.length ? (
-              summary.unpaidExpenses.slice(0, 5).map((item) => (
-                <ExpenseLine
-                  key={item.expense.id}
-                  expense={item.expense}
-                  amount={formatMoney(
-                    item.expectedAmount,
-                    language,
-                    appearance.currency,
-                  )}
-                  meta={item.expense.type}
-                  actionLabel={t('dashboard.markPaid')}
-                  onAction={() => setExpenseToMarkPaid(item.expense)}
-                />
-              ))
-            ) : null}
+            {summary?.unpaidExpenses.length
+              ? summary.unpaidExpenses
+                  .slice(0, 5)
+                  .map((item) => (
+                    <ExpenseLine
+                      key={item.expense.id}
+                      expense={item.expense}
+                      amount={formatMoney(
+                        item.expectedAmount,
+                        language,
+                        appearance.currency,
+                      )}
+                      meta={item.expense.type}
+                      actionLabel={t('dashboard.markPaid')}
+                      onAction={() => setExpenseToMarkPaid(item.expense)}
+                    />
+                  ))
+              : null}
             {summary && summary.unpaidExpenses.length === 0 ? (
               <EmptyLine text={t('dashboard.allPaid')} />
             ) : null}
@@ -471,21 +489,29 @@ export function DashboardPage() {
             {summaryQuery.isLoading ? (
               <EmptyLine text={t('dashboard.loadingPayments')} />
             ) : null}
-            {summary?.paidExpenses.length ? (
-              summary.paidExpenses.slice(0, 5).map((item) => (
-                <ExpenseLine
-                  key={item.payment.id}
-                  expense={item.expense}
-                  amount={formatMoney(item.amount, language, appearance.currency)}
-                  meta={t('dashboard.meta.paid')}
-                  actionLabel={t('dashboard.undoPayment')}
-                  actionIcon="undo"
-                  actionVariant="secondary"
-                  isActionPending={undoPaymentMutation.isPending}
-                  onAction={() => undoPaymentMutation.mutate(item.expense.id)}
-                />
-              ))
-            ) : null}
+            {summary?.paidExpenses.length
+              ? summary.paidExpenses
+                  .slice(0, 5)
+                  .map((item) => (
+                    <ExpenseLine
+                      key={item.payment.id}
+                      expense={item.expense}
+                      amount={formatMoney(
+                        item.amount,
+                        language,
+                        appearance.currency,
+                      )}
+                      meta={t('dashboard.meta.paid')}
+                      actionLabel={t('dashboard.undoPayment')}
+                      actionIcon="undo"
+                      actionVariant="secondary"
+                      isActionPending={undoPaymentMutation.isPending}
+                      onAction={() =>
+                        undoPaymentMutation.mutate(item.expense.id)
+                      }
+                    />
+                  ))
+              : null}
             {summary && summary.paidExpenses.length === 0 ? (
               <EmptyLine text={t('dashboard.noPaid')} />
             ) : null}
@@ -571,12 +597,14 @@ function ExpenseLine({
   return (
     <div className="flex flex-col gap-3 rounded-2xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-3 shadow-[0_4px_0_rgb(var(--border))] sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-center gap-3">
-        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tone.bg}`}>
+        <div
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tone.bg}`}
+        >
           <Icon size={18} />
         </div>
         <div className="min-w-0">
-        <p className="truncate text-sm font-extrabold">{expense.name}</p>
-        <p className="text-xs text-[rgb(var(--muted-foreground))]">{meta}</p>
+          <p className="truncate text-sm font-extrabold">{expense.name}</p>
+          <p className="text-xs text-[rgb(var(--muted-foreground))]">{meta}</p>
         </div>
       </div>
       <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
